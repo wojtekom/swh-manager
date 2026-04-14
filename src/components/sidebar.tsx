@@ -41,7 +41,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/messages", label: "Wiadomości", icon: MessageCircle, roles: ["ADMIN", "COACH", "PARENT", "PLAYER"] },
   { href: "/dashboard/tournaments", label: "Turnieje", icon: Trophy, roles: ["ADMIN", "COACH", "PARENT", "PLAYER"] },
   { href: "/dashboard/camps", label: "Obozy", icon: Tent, roles: ["ADMIN", "COACH", "PARENT", "PLAYER"] },
-  { href: "/dashboard/training", label: "Szkolenie", icon: BookOpen, roles: ["ADMIN", "COACH"] },
+  { href: "/dashboard/training", label: "Szkolenie", icon: BookOpen, roles: ["ADMIN", "COACH", "PARENT"] },
   { href: "/dashboard/notifications", label: "Powiadomienia", icon: Bell, roles: ["ADMIN", "COACH", "PARENT", "PLAYER"] },
   { href: "/dashboard/calendar", label: "Kalendarz", icon: CalendarDays, roles: ["ADMIN", "COACH", "PARENT", "PLAYER"] },
   { href: "/dashboard/equipment", label: "Sprzęt", icon: Package, roles: ["ADMIN", "COACH"] },
