@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#38bdf8"/>
+      <stop offset="100%" style="stop-color:#3b82f6"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <path d="M256 96c0 0-120 32-120 32s-8 96 0 144c8 48 56 112 120 144 64-32 112-96 120-144 8-48 0-144 0-144S256 96 256 96z" fill="none" stroke="white" stroke-width="20" stroke-linejoin="round"/>
+  <text x="256" y="280" text-anchor="middle" font-family="Arial,sans-serif" font-weight="bold" font-size="80" fill="white">SWH</text>
+</svg>

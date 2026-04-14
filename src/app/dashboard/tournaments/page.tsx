@@ -1,0 +1,781 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import {
+  Trophy,
+  Plus,
+  MapPin,
+  Calendar,
+  Users,
+  Trash2,
+  ChevronRight,
+  Swords,
+  UserCheck,
+  UserX,
+  HelpCircle,
+  AlertTriangle,
+  X,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+
+interface Tournament {
+  id: string;
+  name: string;
+  location: string;
+  startDate: string;
+  endDate: string | null;
+  category: string;
+  description: string | null;
+  status: string;
+  group: { id: string; name: string } | null;
+  createdBy: { id: string; name: string };
+  _count: { matches: number; callups: number };
+}
+
+interface TournamentMatch {
+  id: string;
+  opponent: string;
+  isHome: boolean;
+  ourScore: number | null;
+  opponentScore: number | null;
+  matchDate: string;
+  notes: string | null;
+}
+
+interface Callup {
+  id: string;
+  status: string;
+  notes: string | null;
+  respondedAt: string | null;
+  player: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    position: string | null;
+    jerseyNum: number | null;
+    category: string;
+  };
+}
+
+interface Group {
+  id: string;
+  name: string;
+  category: string;
+}
+
+interface Player {
+  id: string;
+  firstName: string;
+  lastName: string;
+  position: string | null;
+  jerseyNum: number | null;
+  category: string;
+}
+
+const STATUS_MAP: Record<string, { label: string; color: string }> = {
+  PLANNED: { label: "Zaplanowany", color: "bg-sky-100 text-sky-700" },
+  IN_PROGRESS: { label: "W trakcie", color: "bg-green-100 text-green-700" },
+  COMPLETED: { label: "Zakończony", color: "bg-gray-100 text-gray-700" },
+  CANCELLED: { label: "Odwołany", color: "bg-red-100 text-red-700" },
+};
+
+const CALLUP_STATUS: Record<string, { label: string; icon: typeof UserCheck; color: string }> = {
+  CALLED: { label: "Powołany", icon: Users, color: "text-blue-600" },
+  CONFIRMED: { label: "Potwierdził", icon: UserCheck, color: "text-green-600" },
+  DECLINED: { label: "Odmówił", icon: UserX, color: "text-red-600" },
+  INJURED: { label: "Kontuzja", icon: AlertTriangle, color: "text-orange-600" },
+};
+
+const CATEGORIES = ["U8", "U10", "U12", "U14", "U16", "U18", "SENIOR"];
+
+export default function TournamentsPage() {
+  const { data: session, status: authStatus } = useSession();
+  const router = useRouter();
+  const isAdminOrCoach = session?.user?.role === "ADMIN" || session?.user?.role === "COACH";
+
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [filterCategory, setFilterCategory] = useState("ALL");
+  const [filterStatus, setFilterStatus] = useState("ALL");
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [tRes, gRes] = await Promise.all([
+        fetch("/api/tournaments"),
+        fetch("/api/groups"),
+      ]);
+      if (tRes.ok) setTournaments(await tRes.json());
+      if (gRes.ok) {
+        const data = await gRes.json();
+        setGroups(data.map((g: Group) => ({ id: g.id, name: g.name, category: g.category })));
+      }
+    } catch {
+      toast.error("Błąd pobierania danych");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (authStatus === "unauthenticated") router.push("/login");
+    if (authStatus === "authenticated") fetchData();
+  }, [authStatus, router, fetchData]);
+
+  const filtered = tournaments.filter((t) => {
+    if (filterCategory !== "ALL" && t.category !== filterCategory) return false;
+    if (filterStatus !== "ALL" && t.status !== filterStatus) return false;
+    return true;
+  });
+
+  async function handleDelete(id: string) {
+    if (!confirm("Usunąć turniej?")) return;
+    const res = await fetch(`/api/tournaments/${id}`, { method: "DELETE" });
+    if (res.ok) { toast.success("Usunięto"); fetchData(); }
+  }
+
+  async function handleStatusChange(id: string, status: string) {
+    const res = await fetch(`/api/tournaments/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    if (res.ok) { toast.success("Status zmieniony"); fetchData(); }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Turnieje</h1>
+          <p className="text-muted-foreground">{tournaments.length} turniejów</p>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          <Select value={filterCategory} onValueChange={(v) => v && setFilterCategory(v)}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Kategoria" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Wszystkie</SelectItem>
+              {CATEGORIES.map((c) => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterStatus} onValueChange={(v) => v && setFilterStatus(v)}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Wszystkie</SelectItem>
+              {Object.entries(STATUS_MAP).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{v.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {isAdminOrCoach && (
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" /> Nowy turniej
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {loading ? (
+        <p className="text-center text-muted-foreground py-8">Ładowanie...</p>
+      ) : filtered.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Trophy className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">Brak turniejów.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {filtered.map((t) => {
+            const statusInfo = STATUS_MAP[t.status] || STATUS_MAP.PLANNED;
+            return (
+              <Card key={t.id} className="hover:shadow-md transition-shadow">
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <Badge variant="outline">{t.category}</Badge>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusInfo.color}`}>
+                          {statusInfo.label}
+                        </span>
+                      </div>
+                      <CardTitle className="text-lg">{t.name}</CardTitle>
+                    </div>
+                    {isAdminOrCoach && (
+                      <Button variant="ghost" size="sm" onClick={() => handleDelete(t.id)}>
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5" /> {t.location}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3.5 w-3.5" />
+                      {new Date(t.startDate).toLocaleDateString("pl-PL", { day: "numeric", month: "short" })}
+                      {t.endDate && ` – ${new Date(t.endDate).toLocaleDateString("pl-PL", { day: "numeric", month: "short" })}`}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-4 text-sm">
+                    <span className="flex items-center gap-1">
+                      <Swords className="h-3.5 w-3.5 text-muted-foreground" />
+                      {t._count.matches} {t._count.matches === 1 ? "mecz" : "meczy"}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                      {t._count.callups} powołanych
+                    </span>
+                  </div>
+
+                  {isAdminOrCoach && (
+                    <div className="flex items-center gap-2 pt-1">
+                      <Select
+                        value={t.status}
+                        onValueChange={(v) => v && handleStatusChange(t.id, v)}
+                      >
+                        <SelectTrigger className="h-8 text-xs w-[140px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(STATUS_MAP).map(([k, v]) => (
+                            <SelectItem key={k} value={k}>{v.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="ml-auto"
+                        onClick={() => setDetailId(t.id)}
+                      >
+                        Szczegóły <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                      </Button>
+                    </div>
+                  )}
+
+                  {!isAdminOrCoach && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setDetailId(t.id)}
+                    >
+                      Szczegóły <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      <CreateTournamentDialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        groups={groups}
+        onSaved={fetchData}
+      />
+
+      {detailId && (
+        <TournamentDetailDialog
+          tournamentId={detailId}
+          onClose={() => setDetailId(null)}
+          isAdminOrCoach={isAdminOrCoach}
+          onUpdated={fetchData}
+        />
+      )}
+    </div>
+  );
+}
+
+// ==================== Dialog tworzenia turnieju ====================
+
+function CreateTournamentDialog({
+  open, onClose, groups, onSaved,
+}: {
+  open: boolean; onClose: () => void; groups: Group[]; onSaved: () => void;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({
+    name: "", location: "", startDate: "", endDate: "",
+    category: "U12", description: "", groupId: "",
+  });
+
+  useEffect(() => {
+    if (open) setForm({ name: "", location: "", startDate: "", endDate: "", category: "U12", description: "", groupId: "" });
+  }, [open]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    const res = await fetch("/api/tournaments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...form,
+        endDate: form.endDate || null,
+        groupId: form.groupId || null,
+      }),
+    });
+    if (res.ok) {
+      toast.success("Turniej utworzony");
+      onSaved();
+      onClose();
+    } else {
+      toast.error("Błąd tworzenia");
+    }
+    setLoading(false);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Nowy turniej</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1">
+            <Label>Nazwa</Label>
+            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="np. Turniej Mikołajkowy" required />
+          </div>
+          <div className="space-y-1">
+            <Label>Lokalizacja</Label>
+            <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="np. Lodowisko Siedlce" required />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Data rozpoczęcia</Label>
+              <Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} required />
+            </div>
+            <div className="space-y-1">
+              <Label>Data zakończenia</Label>
+              <Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Kategoria</Label>
+              <Select value={form.category} onValueChange={(v) => v && setForm({ ...form, category: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Grupa</Label>
+              <Select value={form.groupId || "NONE"} onValueChange={(v) => v && setForm({ ...form, groupId: v === "NONE" ? "" : v })}>
+                <SelectTrigger><SelectValue placeholder="Brak" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NONE">Brak</SelectItem>
+                  {groups.map((g) => (
+                    <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label>Opis (opcjonalnie)</Label>
+            <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} />
+          </div>
+          <div className="flex gap-3 justify-end">
+            <Button type="button" variant="outline" onClick={onClose}>Anuluj</Button>
+            <Button type="submit" disabled={loading}>
+              <Trophy className="h-4 w-4 mr-1" />
+              {loading ? "Tworzenie..." : "Utwórz"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ==================== Dialog szczegółów turnieju ====================
+
+function TournamentDetailDialog({
+  tournamentId, onClose, isAdminOrCoach, onUpdated,
+}: {
+  tournamentId: string; onClose: () => void; isAdminOrCoach: boolean; onUpdated: () => void;
+}) {
+  const [tournament, setTournament] = useState<(Tournament & { matches: TournamentMatch[]; callups: Callup[] }) | null>(null);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [tab, setTab] = useState<"matches" | "callups">("matches");
+  const [matchForm, setMatchForm] = useState({ opponent: "", isHome: true, matchDate: "", notes: "" });
+  const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
+  const [addingCallups, setAddingCallups] = useState(false);
+
+  const fetchTournament = useCallback(async () => {
+    const res = await fetch(`/api/tournaments/${tournamentId}`);
+    if (res.ok) setTournament(await res.json());
+  }, [tournamentId]);
+
+  useEffect(() => {
+    fetchTournament();
+    fetch("/api/players").then((r) => r.json()).then(setPlayers).catch(() => {});
+  }, [fetchTournament]);
+
+  async function addMatch(e: React.FormEvent) {
+    e.preventDefault();
+    const res = await fetch(`/api/tournaments/${tournamentId}/matches`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(matchForm),
+    });
+    if (res.ok) {
+      toast.success("Mecz dodany");
+      setMatchForm({ opponent: "", isHome: true, matchDate: "", notes: "" });
+      fetchTournament();
+      onUpdated();
+    }
+  }
+
+  async function updateScore(matchId: string, ourScore: number, opponentScore: number) {
+    await fetch(`/api/tournaments/${tournamentId}/matches`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ matchId, ourScore, opponentScore }),
+    });
+    fetchTournament();
+    onUpdated();
+  }
+
+  async function addCallups() {
+    if (selectedPlayers.length === 0) return;
+    const res = await fetch(`/api/tournaments/${tournamentId}/callups`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ playerIds: selectedPlayers }),
+    });
+    if (res.ok) {
+      toast.success("Powołania dodane");
+      setSelectedPlayers([]);
+      setAddingCallups(false);
+      fetchTournament();
+      onUpdated();
+    }
+  }
+
+  async function updateCallupStatus(callupId: string, status: string) {
+    await fetch(`/api/tournaments/${tournamentId}/callups`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ callupId, status }),
+    });
+    fetchTournament();
+  }
+
+  async function removeCallup(callupId: string) {
+    await fetch(`/api/tournaments/${tournamentId}/callups?callupId=${callupId}`, {
+      method: "DELETE",
+    });
+    fetchTournament();
+    onUpdated();
+  }
+
+  if (!tournament) {
+    return (
+      <Dialog open onOpenChange={onClose}>
+        <DialogContent><p className="text-center py-8 text-muted-foreground">Ładowanie...</p></DialogContent>
+      </Dialog>
+    );
+  }
+
+  const calledPlayerIds = tournament.callups.map((c) => c.player.id);
+  const availablePlayers = players.filter(
+    (p) => !calledPlayerIds.includes(p.id) && p.category === tournament.category
+  );
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Trophy className="h-5 w-5" />
+            {tournament.name}
+            <Badge variant="outline" className="ml-1">{tournament.category}</Badge>
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
+          <span className="flex items-center gap-1">
+            <MapPin className="h-3.5 w-3.5" /> {tournament.location}
+          </span>
+          <span className="flex items-center gap-1">
+            <Calendar className="h-3.5 w-3.5" />
+            {new Date(tournament.startDate).toLocaleDateString("pl-PL")}
+            {tournament.endDate && ` – ${new Date(tournament.endDate).toLocaleDateString("pl-PL")}`}
+          </span>
+        </div>
+
+        {tournament.description && (
+          <p className="text-sm text-muted-foreground mb-4">{tournament.description}</p>
+        )}
+
+        {/* Tabs */}
+        <div className="flex gap-1 border-b mb-4">
+          <button
+            onClick={() => setTab("matches")}
+            className={cn("px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
+              tab === "matches" ? "border-sky-500 text-sky-600" : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Mecze ({tournament.matches.length})
+          </button>
+          <button
+            onClick={() => setTab("callups")}
+            className={cn("px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
+              tab === "callups" ? "border-sky-500 text-sky-600" : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Powołania ({tournament.callups.length})
+          </button>
+        </div>
+
+        {/* Mecze */}
+        {tab === "matches" && (
+          <div className="space-y-4">
+            {tournament.matches.length === 0 ? (
+              <p className="text-center text-muted-foreground py-4">Brak meczy</p>
+            ) : (
+              <div className="space-y-2">
+                {tournament.matches.map((m) => (
+                  <div key={m.id} className="flex items-center gap-3 p-3 border rounded-lg">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">
+                        {m.isHome ? "SWH Siedlce" : m.opponent} vs {m.isHome ? m.opponent : "SWH Siedlce"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(m.matchDate).toLocaleDateString("pl-PL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                    </div>
+                    {m.ourScore !== null && m.opponentScore !== null ? (
+                      <div className="text-lg font-bold">
+                        <span className={m.ourScore > m.opponentScore ? "text-green-600" : m.ourScore < m.opponentScore ? "text-red-600" : ""}>
+                          {m.ourScore}
+                        </span>
+                        <span className="text-muted-foreground mx-1">:</span>
+                        <span>{m.opponentScore}</span>
+                      </div>
+                    ) : isAdminOrCoach ? (
+                      <div className="flex items-center gap-1">
+                        <Input
+                          type="number"
+                          min={0}
+                          className="w-14 h-8 text-center"
+                          placeholder="—"
+                          onBlur={(e) => {
+                            const our = parseInt(e.target.value);
+                            const oppInput = e.target.parentElement?.querySelector<HTMLInputElement>('input:last-of-type');
+                            const opp = oppInput ? parseInt(oppInput.value) : NaN;
+                            if (!isNaN(our) && !isNaN(opp)) updateScore(m.id, our, opp);
+                          }}
+                        />
+                        <span className="text-muted-foreground">:</span>
+                        <Input
+                          type="number"
+                          min={0}
+                          className="w-14 h-8 text-center"
+                          placeholder="—"
+                          onBlur={(e) => {
+                            const opp = parseInt(e.target.value);
+                            const ourInput = e.target.parentElement?.querySelector<HTMLInputElement>('input:first-of-type');
+                            const our = ourInput ? parseInt(ourInput.value) : NaN;
+                            if (!isNaN(our) && !isNaN(opp)) updateScore(m.id, our, opp);
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">— : —</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {isAdminOrCoach && (
+              <form onSubmit={addMatch} className="border-t pt-4 space-y-3">
+                <p className="text-sm font-medium">Dodaj mecz</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    value={matchForm.opponent}
+                    onChange={(e) => setMatchForm({ ...matchForm, opponent: e.target.value })}
+                    placeholder="Przeciwnik"
+                    required
+                  />
+                  <Input
+                    type="datetime-local"
+                    value={matchForm.matchDate}
+                    onChange={(e) => setMatchForm({ ...matchForm, matchDate: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <label className="flex items-center gap-1.5 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={matchForm.isHome}
+                      onChange={(e) => setMatchForm({ ...matchForm, isHome: e.target.checked })}
+                      className="h-4 w-4"
+                    />
+                    Mecz u siebie
+                  </label>
+                  <Button type="submit" size="sm" className="ml-auto">
+                    <Plus className="h-3.5 w-3.5 mr-1" /> Dodaj mecz
+                  </Button>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
+
+        {/* Powołania */}
+        {tab === "callups" && (
+          <div className="space-y-4">
+            {tournament.callups.length === 0 ? (
+              <p className="text-center text-muted-foreground py-4">Brak powołań</p>
+            ) : (
+              <div className="space-y-2">
+                {tournament.callups.map((c) => {
+                  const st = CALLUP_STATUS[c.status] || CALLUP_STATUS.CALLED;
+                  const Icon = st.icon;
+                  return (
+                    <div key={c.id} className="flex items-center gap-3 p-2.5 border rounded-lg">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">
+                          {c.player.jerseyNum && <span className="text-muted-foreground mr-1">#{c.player.jerseyNum}</span>}
+                          {c.player.firstName} {c.player.lastName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {c.player.position || "Brak pozycji"}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {isAdminOrCoach ? (
+                          <Select
+                            value={c.status}
+                            onValueChange={(v) => v && updateCallupStatus(c.id, v)}
+                          >
+                            <SelectTrigger className="h-7 text-xs w-[130px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.entries(CALLUP_STATUS).map(([k, v]) => (
+                                <SelectItem key={k} value={k}>{v.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <span className={`flex items-center gap-1 text-xs font-medium ${st.color}`}>
+                            <Icon className="h-3.5 w-3.5" /> {st.label}
+                          </span>
+                        )}
+                        {isAdminOrCoach && (
+                          <Button variant="ghost" size="sm" onClick={() => removeCallup(c.id)}>
+                            <X className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Podsumowanie */}
+            {tournament.callups.length > 0 && (
+              <div className="flex gap-3 text-xs text-muted-foreground border-t pt-3">
+                <span className="text-green-600">{tournament.callups.filter((c) => c.status === "CONFIRMED").length} potwierdzonych</span>
+                <span className="text-blue-600">{tournament.callups.filter((c) => c.status === "CALLED").length} oczekujących</span>
+                <span className="text-red-600">{tournament.callups.filter((c) => c.status === "DECLINED").length} odmówiło</span>
+                <span className="text-orange-600">{tournament.callups.filter((c) => c.status === "INJURED").length} kontuzjowanych</span>
+              </div>
+            )}
+
+            {isAdminOrCoach && !addingCallups && (
+              <Button size="sm" variant="outline" onClick={() => setAddingCallups(true)}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> Dodaj powołania
+              </Button>
+            )}
+
+            {isAdminOrCoach && addingCallups && (
+              <div className="border-t pt-4 space-y-3">
+                <p className="text-sm font-medium">Powołaj zawodników ({tournament.category})</p>
+                {availablePlayers.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Brak dostępnych zawodników w tej kategorii</p>
+                ) : (
+                  <div className="max-h-48 overflow-y-auto space-y-1 border rounded-lg p-1">
+                    {availablePlayers.map((p) => (
+                      <label key={p.id} className="flex items-center gap-2 px-3 py-1.5 hover:bg-accent rounded-md cursor-pointer text-sm">
+                        <input
+                          type="checkbox"
+                          checked={selectedPlayers.includes(p.id)}
+                          onChange={(e) =>
+                            setSelectedPlayers((prev) =>
+                              e.target.checked
+                                ? [...prev, p.id]
+                                : prev.filter((x) => x !== p.id)
+                            )
+                          }
+                          className="h-4 w-4"
+                        />
+                        {p.jerseyNum && <span className="text-muted-foreground">#{p.jerseyNum}</span>}
+                        {p.firstName} {p.lastName}
+                        {p.position && <span className="text-xs text-muted-foreground ml-auto">{p.position}</span>}
+                      </label>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2 justify-end">
+                  <Button size="sm" variant="outline" onClick={() => { setAddingCallups(false); setSelectedPlayers([]); }}>
+                    Anuluj
+                  </Button>
+                  <Button size="sm" onClick={addCallups} disabled={selectedPlayers.length === 0}>
+                    Powołaj ({selectedPlayers.length})
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
