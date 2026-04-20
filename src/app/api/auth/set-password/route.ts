@@ -1,27 +1,3 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { verifyActivationToken } from "@/lib/activation-token";
-import { z } from "zod";
-
-const schema = z.object({
-  token: z.string().min(10),
-  password: z
-    .string()
-    .min(8, "Haslo musi miec minimum 8 znakow")
-    .max(128, "Haslo jest za dlugie"),
-});
-
-// POST /api/auth/set-password
-// Ustawia nowe haslo na podstawie tokena aktywacyjnego
-export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => null);
-  const parsed = schema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: parsed.error.flatten() },
-      { status: 400 }
-    );
-  }
 
   const { token, password } = parsed.data;
   const verification = verifyActivationToken(token);
