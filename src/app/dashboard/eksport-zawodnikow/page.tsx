@@ -21,6 +21,17 @@ function pick(obj: AnyObj, keys: string[]): unknown {
 }
 
 function extractGroup(p: AnyObj): { id: string | null; name: string | null } {
+ // Prisma relation: groupMembers[] -> [{ group: {id, name, ...} }]
+  const gmRaw = p["groupMembers"];
+  if (Array.isArray(gmRaw) && gmRaw.length > 0) {
+    const firstMember = gmRaw[0] as AnyObj;
+    const grp = firstMember?.["group"] as AnyObj | undefined;
+    if (grp && typeof grp === "object") {
+      const id = (pick(grp, ["id", "_id", "uuid"]) as string) || null;
+      const name = (pick(grp, ["name", "nazwa", "label", "title"]) as string) || null;
+      if (id || name) return { id: id || name, name: name || id };
+    }
+  } 
   // Możliwe pola obiektu grupy zagnieżdżonego
   const nested = (pick(p, ["group", "team", "druzyna", "grupa", "kategoria", "category", "trainingGroup", "ageGroup"]) as AnyObj | null);
   if (nested && typeof nested === "object") {
