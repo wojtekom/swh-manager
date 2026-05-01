@@ -8,28 +8,48 @@ import {
 import { sendEmail } from "@/lib/notifications/channels/email";
 
 // GET /api/invitations/activate-imported
-// Zwraca liczbe kont z importu, ktore czekaja na aktywacje (bez wysylki)
+// Zwraca liczbe i liste rodzicow do aktywacji.
+//
+// UWAGA (Sprint 0, fix maj 2026): Wszyscy rodzice zaimportowani z SportsManago
+// dostali wygenerowane hashe bcrypt ($2b$ len=60), ktorych NIE ZNAJA —
+// czyli technicznie maja hash, ale nie moga sie zalogowac.
+//
+// Dlatego TYMCZASOWO traktujemy WSZYSTKICH active PARENT jako "do aktywacji".
+// Wysylka mejla = zaproszenie do ustawienia wlasnego hasla
+// (set-password nadpisze hash). Filtrowanie po isImportPlaceholderHash
+// nie dziala dla tej populacji — placeholder zostal zastapiony przez
+// realny hash z importu.
+//
+// W przyszlosci dodamy pole User.passwordSetByUser (migracja Prismy)
+// i bedziemy filtrowac po nim — dopoki tego nie ma, idziemy ta drogą.
 export async function GET() {
   const { session, error } = await getSessionOrError();
   if (error) return error;
   const roleError = requireRole("ADMIN", session!.user.role);
   if (roleError) return roleError;
 
-  const all = await prisma.user.findMany({
-    where: { active: true },
+  const pending = await prisma.user.findMany({
+    where: { active: true, role: "PARENT" },
     select: { id: true, email: true, name: true, passwordHash: true },
   });
   type PendingUser = { id: string; email: string; name: string; passwordHash: string };
-  const pending = all.filter((u: PendingUser) => isImportPlaceholderHash(u.passwordHash));
+
+  // Diagnostyka: ile z nich ma jeszcze techniczny placeholder (powinno byc 0
+  // po imporcie z SportsManago, bo placeholder zostal zastapiony bcrypt'em).
+  const withPlaceholder = pending.filter(
+    (u: PendingUser) => isImportPlaceholderHash(u.passwordHash)
+  ).length;
 
   return NextResponse.json({
     count: pending.length,
+    withPlaceholder,
     users: pending.map((u: PendingUser) => ({ id: u.id, email: u.email, name: u.name })),
   });
 }
 
 // POST /api/invitations/activate-imported
 // Wysyla email aktywacyjny do wszystkich zaimportowanych rodzicow
+// (lub do podzbioru przekazanego w body.userIds).
 export async function POST(req: NextRequest) {
   const { session, error } = await getSessionOrError();
   if (error) return error;
@@ -47,13 +67,17 @@ export async function POST(req: NextRequest) {
     // brak body = wyslij do wszystkich
   }
 
-  const whereBase = { active: true, ...(targetIds ? { id: { in: targetIds } } : {}) };
-  const users = await prisma.user.findMany({
+  // Bierzemy wszystkich active PARENT (z opcjonalnym zawezeniem do userIds).
+  // Patrz UWAGA przy GET endpoint dlaczego nie filtrujemy juz po placeholder.
+  const whereBase = {
+    active: true,
+    role: "PARENT" as const,
+    ...(targetIds ? { id: { in: targetIds } } : {}),
+  };
+  const pending = await prisma.user.findMany({
     where: whereBase,
     select: { id: true, email: true, name: true, passwordHash: true },
   });
-  type PendingUser = { id: string; email: string; name: string; passwordHash: string };
-  const pending = users.filter((u: PendingUser) => isImportPlaceholderHash(u.passwordHash));
 
   if (pending.length === 0) {
     return NextResponse.json({
