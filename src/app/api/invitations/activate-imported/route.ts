@@ -7,6 +7,29 @@ import {
 } from "@/lib/activation-token";
 import { sendEmail } from "@/lib/notifications/channels/email";
 
+// === KONFIGURACJA POMIJANIA ===
+//
+// ID kont, ktore NIGDY nie dostaja mejli aktywacyjnych.
+// Powod: konta testowe / demo, ktore istnieja w bazie ale nie naleza
+// do prawdziwych rodzicow.
+const EXCLUDED_USER_IDS = new Set<string>([
+  "demo-parent", // konto testowe "Anna Nowak (Rodzic)" / rodzic@swh.pl
+]);
+
+// Walidacja czy adres email jest sensownie poprawny.
+// Nie robimy regex z RFC, tylko podstawowy check: ma @, ma local, ma domain z kropka.
+// Cel: wylapywac literowki z importu (np. "adam.tlen.pl" zamiast "adam@tlen.pl").
+function isValidEmail(email: string): boolean {
+  if (!email || typeof email !== "string") return false;
+  if (!email.includes("@")) return false;
+  const parts = email.split("@");
+  if (parts.length !== 2) return false;
+  const [local, domain] = parts;
+  if (!local || local.length === 0) return false;
+  if (!domain || !domain.includes(".")) return false;
+  return true;
+}
+
 // GET /api/invitations/activate-imported
 // Zwraca liczbe i liste rodzicow do aktywacji.
 //
@@ -34,22 +57,39 @@ export async function GET() {
   });
   type PendingUser = { id: string; email: string; name: string; passwordHash: string };
 
-  // Diagnostyka: ile z nich ma jeszcze techniczny placeholder (powinno byc 0
-  // po imporcie z SportsManago, bo placeholder zostal zastapiony bcrypt'em).
+  // Diagnostyka: ile z nich ma jeszcze techniczny placeholder.
   const withPlaceholder = pending.filter(
     (u: PendingUser) => isImportPlaceholderHash(u.passwordHash)
   ).length;
 
+  // Diagnostyka: ile zostanie pominietych przy faktycznej wysylce.
+  const willBeSkipped = pending.filter(
+    (u: PendingUser) => EXCLUDED_USER_IDS.has(u.id) || !isValidEmail(u.email)
+  );
+
   return NextResponse.json({
     count: pending.length,
+    willBeSent: pending.length - willBeSkipped.length,
+    willBeSkipped: willBeSkipped.length,
     withPlaceholder,
-    users: pending.map((u: PendingUser) => ({ id: u.id, email: u.email, name: u.name })),
+    users: pending.map((u: PendingUser) => ({
+      id: u.id,
+      email: u.email,
+      name: u.name,
+      willBeSkipped: EXCLUDED_USER_IDS.has(u.id) || !isValidEmail(u.email),
+      skipReason: EXCLUDED_USER_IDS.has(u.id)
+        ? "Konto testowe (pominiete)"
+        : !isValidEmail(u.email)
+        ? "Niepoprawny adres email"
+        : undefined,
+    })),
   });
 }
 
 // POST /api/invitations/activate-imported
 // Wysyla email aktywacyjny do wszystkich zaimportowanych rodzicow
 // (lub do podzbioru przekazanego w body.userIds).
+// Pomija konta testowe (EXCLUDED_USER_IDS) i z niepoprawnym emailem.
 export async function POST(req: NextRequest) {
   const { session, error } = await getSessionOrError();
   if (error) return error;
@@ -67,8 +107,6 @@ export async function POST(req: NextRequest) {
     // brak body = wyslij do wszystkich
   }
 
-  // Bierzemy wszystkich active PARENT (z opcjonalnym zawezeniem do userIds).
-  // Patrz UWAGA przy GET endpoint dlaczego nie filtrujemy juz po placeholder.
   const whereBase = {
     active: true,
     role: "PARENT" as const,
@@ -84,15 +122,38 @@ export async function POST(req: NextRequest) {
       message: "Brak kont do aktywacji",
       sent: 0,
       failed: 0,
+      skipped: 0,
     });
   }
 
   const appUrl = process.env.NEXTAUTH_URL || "https://swh-manager.vercel.app";
   let sent = 0;
   let failed = 0;
-  const errors: Array<{ email: string; reason: string }> = [];
+  const errors: Array<{ email: string; name: string; reason: string }> = [];
+  const skipped: Array<{ email: string; name: string; reason: string }> = [];
 
   for (const user of pending) {
+    // FILTR 1: pomijamy konta testowe
+    if (EXCLUDED_USER_IDS.has(user.id)) {
+      skipped.push({
+        email: user.email,
+        name: user.name,
+        reason: "Konto testowe (pominiete)",
+      });
+      continue;
+    }
+
+    // FILTR 2: pomijamy uzytkownikow z niepoprawnym emailem
+    if (!isValidEmail(user.email)) {
+      skipped.push({
+        email: user.email,
+        name: user.name,
+        reason: "Niepoprawny adres email — wymaga poprawy w bazie",
+      });
+      continue;
+    }
+
+    // WYSYLKA
     try {
       const token = createActivationToken(user.id);
       const link = `${appUrl}/set-password?token=${encodeURIComponent(token)}`;
@@ -120,6 +181,7 @@ export async function POST(req: NextRequest) {
       failed++;
       errors.push({
         email: user.email,
+        name: user.name,
         reason: err instanceof Error ? err.message : "Nieznany blad",
       });
       console.error(`[ACTIVATE-IMPORTED] Failed for ${user.email}:`, err);
@@ -127,10 +189,12 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({
-    message: `Wyslano ${sent} z ${pending.length} zaproszen`,
+    message: `Wyslano ${sent} z ${pending.length} zaproszen (pominieto: ${skipped.length}, nieudane: ${failed})`,
     sent,
     failed,
+    skipped: skipped.length,
     total: pending.length,
     errors: errors.slice(0, 10),
+    skippedDetails: skipped.slice(0, 10),
   });
 }
