@@ -8,17 +8,21 @@ import {
 import { sendEmail } from "@/lib/notifications/channels/email";
 
 // === KONFIGURACJA POMIJANIA ===
-//
-// ID kont, ktore NIGDY nie dostaja mejli aktywacyjnych.
-// Powod: konta testowe / demo, ktore istnieja w bazie ale nie naleza
-// do prawdziwych rodzicow.
 const EXCLUDED_USER_IDS = new Set<string>([
   "demo-parent", // konto testowe "Anna Nowak (Rodzic)" / rodzic@swh.pl
 ]);
 
+// === RATE LIMITING ===
+// Resend (free plan) pozwala na 5 mejli/sekunde. Dajemy 250ms odstepu = 4/s
+// (bezpieczna marża pod limit). Dla 30 osob to ~7.5s — miesci sie w Vercel
+// timeout 10s (Hobby) i znacznie ponizej 60s (Pro).
+const SEND_DELAY_MS = 250;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 // Walidacja czy adres email jest sensownie poprawny.
-// Nie robimy regex z RFC, tylko podstawowy check: ma @, ma local, ma domain z kropka.
-// Cel: wylapywac literowki z importu (np. "adam.tlen.pl" zamiast "adam@tlen.pl").
 function isValidEmail(email: string): boolean {
   if (!email || typeof email !== "string") return false;
   if (!email.includes("@")) return false;
@@ -31,20 +35,9 @@ function isValidEmail(email: string): boolean {
 }
 
 // GET /api/invitations/activate-imported
-// Zwraca liczbe i liste rodzicow do aktywacji.
-//
 // UWAGA (Sprint 0, fix maj 2026): Wszyscy rodzice zaimportowani z SportsManago
-// dostali wygenerowane hashe bcrypt ($2b$ len=60), ktorych NIE ZNAJA —
-// czyli technicznie maja hash, ale nie moga sie zalogowac.
-//
+// dostali wygenerowane hashe bcrypt ($2b$ len=60), ktorych NIE ZNAJA.
 // Dlatego TYMCZASOWO traktujemy WSZYSTKICH active PARENT jako "do aktywacji".
-// Wysylka mejla = zaproszenie do ustawienia wlasnego hasla
-// (set-password nadpisze hash). Filtrowanie po isImportPlaceholderHash
-// nie dziala dla tej populacji — placeholder zostal zastapiony przez
-// realny hash z importu.
-//
-// W przyszlosci dodamy pole User.passwordSetByUser (migracja Prismy)
-// i bedziemy filtrowac po nim — dopoki tego nie ma, idziemy ta drogą.
 export async function GET() {
   const { session, error } = await getSessionOrError();
   if (error) return error;
@@ -57,12 +50,10 @@ export async function GET() {
   });
   type PendingUser = { id: string; email: string; name: string; passwordHash: string };
 
-  // Diagnostyka: ile z nich ma jeszcze techniczny placeholder.
   const withPlaceholder = pending.filter(
     (u: PendingUser) => isImportPlaceholderHash(u.passwordHash)
   ).length;
 
-  // Diagnostyka: ile zostanie pominietych przy faktycznej wysylce.
   const willBeSkipped = pending.filter(
     (u: PendingUser) => EXCLUDED_USER_IDS.has(u.id) || !isValidEmail(u.email)
   );
@@ -89,7 +80,8 @@ export async function GET() {
 // POST /api/invitations/activate-imported
 // Wysyla email aktywacyjny do wszystkich zaimportowanych rodzicow
 // (lub do podzbioru przekazanego w body.userIds).
-// Pomija konta testowe (EXCLUDED_USER_IDS) i z niepoprawnym emailem.
+// Pomija konta testowe i z niepoprawnym emailem.
+// MA wbudowany rate limiter — 250ms miedzy wysylkami zeby nie hitnac Resend 5/s.
 export async function POST(req: NextRequest) {
   const { session, error } = await getSessionOrError();
   if (error) return error;
@@ -132,7 +124,9 @@ export async function POST(req: NextRequest) {
   const errors: Array<{ email: string; name: string; reason: string }> = [];
   const skipped: Array<{ email: string; name: string; reason: string }> = [];
 
-  for (const user of pending) {
+  for (let i = 0; i < pending.length; i++) {
+    const user = pending[i];
+
     // FILTR 1: pomijamy konta testowe
     if (EXCLUDED_USER_IDS.has(user.id)) {
       skipped.push({
@@ -186,6 +180,12 @@ export async function POST(req: NextRequest) {
       });
       console.error(`[ACTIVATE-IMPORTED] Failed for ${user.email}:`, err);
     }
+
+    // RATE LIMIT: opóznienie po kazdej probie (sukcesu lub bledu) opracz ostatniej.
+    // Resend free: 5 req/s — dajemy 250ms = 4/s, bezpieczny margines.
+    if (i < pending.length - 1) {
+      await sleep(SEND_DELAY_MS);
+    }
   }
 
   return NextResponse.json({
@@ -194,7 +194,7 @@ export async function POST(req: NextRequest) {
     failed,
     skipped: skipped.length,
     total: pending.length,
-    errors: errors.slice(0, 10),
+    errors: errors.slice(0, 30), // zwiekszamy do 30 zeby zobaczyc wszystkie bledy
     skippedDetails: skipped.slice(0, 10),
   });
 }
