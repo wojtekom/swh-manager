@@ -156,6 +156,8 @@ model Player {
   campRegistrations CampRegistration[]
   equipmentLoans    EquipmentLoan[]
   orders            Order[]
+  skillAssessments  PlayerSkillAssessment[]
+  fitnessTests      PlayerFitnessTest[]
 
   @@map("players")
 }
@@ -952,4 +954,57 @@ model PushSubscription {
 
   @@index([userId])
   @@map("push_subscriptions")
+}
+
+// ==================== KARTA ROZWOJU (Gruth 2016) ====================
+
+model SkillDefinition {
+  id            String @id @default(cuid())
+  code          String @unique  // np. "R1", "Ł3", "K10"
+  name          String
+  description   String?
+  category      String          // ROLKI, ŁYŻWY, KRĄŻEK, PODANIA, STRZAŁY, OBRONA, ATAK, CIAŁO
+  sortOrder     Int    @default(0)
+  expectedU8    String? // oczekiwany etap W/T/D/O dla U8
+  expectedU10   String?
+  expectedU12   String?
+  expectedU14   String?
+
+  assessments   PlayerSkillAssessment[]
+
+  @@index([category])
+  @@map("skill_definitions")
+}
+
+model PlayerSkillAssessment {
+  id          String   @id @default(cuid())
+  playerId    String
+  skillId     String
+  grade       String   // W=Wprowadzony, T=Trenowany, D=Doskonalony, O=Opanowany
+  notes       String?
+  assessedBy  String?  // imię trenera
+  assessedAt  DateTime @default(now())
+
+  player Player          @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  skill  SkillDefinition @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@index([skillId])
+  @@map("player_skill_assessments")
+}
+
+model PlayerFitnessTest {
+  id        String   @id @default(cuid())
+  playerId  String
+  testType  String   // np. "sprint_30m", "cooper", "skok_w_dal", "kozlowanie"
+  result    String   // wynik jako tekst (np. "5.2s", "2100m")
+  period    String   // "start" | "progress" | "end"
+  testDate  DateTime @default(now())
+  notes     String?
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@index([testType])
+  @@map("player_fitness_tests")
 }
