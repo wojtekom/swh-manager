@@ -111,7 +111,7 @@ const skills: SkillDef[] = [
   { code: "O11", name: "Pierwszy na krążku (compete level)", category: "OBRONA", sortOrder: 610, expectedU8: "W", expectedU10: "T", expectedU12: "D" },
 
   // ==================== ⚡ ATAK (A1–A13) ====================
-  { code: "A1",  name: "Jazda na "wolne lody" (finding open ice)", category: "ATAK", sortOrder: 700, expectedU8: "W", expectedU10: "T", expectedU12: "D" },
+  { code: "A1",  name: "Jazda na 'wolne lody' (finding open ice)", category: "ATAK", sortOrder: 700, expectedU8: "W", expectedU10: "T", expectedU12: "D" },
   { code: "A2",  name: "Podanie i rusz (give-and-go)", category: "ATAK", sortOrder: 701, expectedU10: "W", expectedU12: "T", expectedU14: "D" },
   { code: "A3",  name: "Trójkąt ataku (triangle offense)", category: "ATAK", sortOrder: 702, expectedU12: "W", expectedU14: "T" },
   { code: "A4",  name: "Wejście do strefy — carry-in", category: "ATAK", sortOrder: 703, expectedU10: "W", expectedU12: "T", expectedU14: "D" },

@@ -246,11 +246,11 @@ ZAMKNIĘCIE (5 min):
       notes: `ROZGRZEWKA (15 min):
 • Dwójki: podanie do siebie stojąc (forehand-forehand) — 2 min
 • Jazda swobodna z podawaniem piłki tenisowej w parach
-• "Telefon" — 4 osoby w rzędzie, podanie z jednego końca na drugi, kto szybciej
+• 'Telefon' — 4 osoby w rzędzie, podanie z jednego końca na drugi, kto szybciej
 
 CZĘŚĆ GŁÓWNA (25 min):
 • Podanie forehand — pokaz: waga z nogi tylnej na przednią, łyżka kieruje krążek
-• Przyjęcie — "miękkie ręce": łyżka amortyzuje krążek (cushioning)
+• Przyjęcie — 'miękkie ręce': łyżka amortyzuje krążek (cushioning)
 • Podanie w dwójkach w miejscu — forehand, 3m odległość
 • Podanie w ruchu — dwójki jadą obok siebie, podają co 5m
 
@@ -266,7 +266,7 @@ ZAMKNIĘCIE (5 min):
       objectives: "Strzał nadgarstkowy w ruchu (S2). Dobijanie (S6). Podanie + strzał (P1). Szukanie wolnych lodów (A1).",
       notes: `ROZGRZEWKA (15 min):
 • Prowadzenie krążka — slalom 6 pachołków + strzał (każdy 3 razy)
-• "Policjant" — jeden goni, reszta ucieka z krążkami
+• 'Policjant' — jeden goni, reszta ucieka z krążkami
 
 CZĘŚĆ GŁÓWNA (25 min):
 • Strzał z miejsca — powtórzenie: waga, pozycja kija, cel (dół bramki)
@@ -299,7 +299,7 @@ GRA (15 min):
 • Mecz 3v3 z wyznaczonym obrońcą (rotacja co 2 min)
 
 ZAMKNIĘCIE (5 min):
-• "Najlepsza obrona dnia" — trener wskazuje i tłumaczy dlaczego` },
+• 'Najlepsza obrona dnia' — trener wskazuje i tłumaczy dlaczego` },
 
     { title: "Taktyka — give-and-go, gra na wolne lody", duration: 60, order: 12,
       skillCodes: ["A1","A2","A4","P5","P9"],
