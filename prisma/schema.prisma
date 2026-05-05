@@ -864,6 +864,7 @@ model TrainingSession {
   plan     TrainingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
   schedule Schedule?    @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
   drills   SessionDrill[]
+  skillFocus SessionSkillFocus[]
 
   @@map("training_sessions")
 }
@@ -971,6 +972,7 @@ model SkillDefinition {
   expectedU14   String?
 
   assessments   PlayerSkillAssessment[]
+  sessionFocus  SessionSkillFocus[]
 
   @@index([category])
   @@map("skill_definitions")
@@ -1007,4 +1009,20 @@ model PlayerFitnessTest {
   @@index([playerId])
   @@index([testType])
   @@map("player_fitness_tests")
+}
+
+// Powiązanie sesji treningowej z umiejętnościami Grutha
+model SessionSkillFocus {
+  id        String @id @default(cuid())
+  sessionId String
+  skillId   String
+  intensity String @default("TRAIN") // INTRO=wprowadzenie, TRAIN=trening, DRILL=doskonalenie, GAME=w grze
+
+  session TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  skill   SkillDefinition @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, skillId])
+  @@index([sessionId])
+  @@index([skillId])
+  @@map("session_skill_focus")
 }

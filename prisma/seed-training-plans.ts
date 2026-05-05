@@ -24,6 +24,7 @@ interface SessionDef {
   objectives: string;
   notes: string;
   order: number;
+  skillCodes?: string[]; // kody umiejętności Grutha ćwiczone w tej sesji (np. ["R1","R2","R8"])
 }
 
 interface PhaseDef {
@@ -32,6 +33,8 @@ interface PhaseDef {
   planType: PlanType;
   description: string;
   sessions: SessionDef[];
+  startDate?: string; // YYYY-MM-DD — data pierwszej sesji w fazie
+  dayPattern?: string; // "mon-thu" | "mon-thu-sat" — wzorzec dni treningowych
 }
 
 interface ProgramDef {
@@ -50,9 +53,12 @@ const MIKRUS_ROLKI: PhaseDef = {
   season: "roller-2026",
   planType: "SEASONAL",
   description: "Mezocykl 1: Oswojenie (kwiecień). Cel: bezpieczna jazda przodem, hamowanie, zabawa z krążkiem.",
+  startDate: "2026-04-13",
+  dayPattern: "mon-thu",
   sessions: [
     { title: "Oswojenie z rolkami — pierwsza jazda", duration: 60, order: 1,
-      objectives: "Prawidłowa postawa. Jazda przodem na dwóch nogach. Bezpieczne hamowanie pługiem.",
+      skillCodes: ["R1", "R2", "R8"],
+      objectives: "Prawidłowa postawa (R1). Jazda przodem na dwóch nogach (R2). Bezpieczne hamowanie pługiem (R8).",
       notes: `ROZGRZEWKA (15 min):
 • Marsz w rolkach na dywaniku/gumie — poczucie kółek
 • "Robot" — sztywne nogi, małe kroczki do przodu
@@ -73,7 +79,8 @@ ZAMKNIĘCIE (5 min):
 • Przybicie "żółwika" (pięść o pięść)` },
 
     { title: "Postawa i równowaga", duration: 60, order: 2,
-      objectives: "Utrwalenie pozycji hokejowej. Jazda na jednej nodze (ślizgi). Wstawanie po upadku.",
+      skillCodes: ["R1", "R2", "C1"],
+      objectives: "Utrwalenie pozycji hokejowej (R1). Jazda na jednej nodze — ślizgi (R2). Wstawanie po upadku. Równowaga dynamiczna (C1).",
       notes: `ROZGRZEWKA (15 min):
 • Jazda swobodna 3 min z muzyką
 • "Samoloty" — jazda z rozłożonymi rękami, pochylanie na boki
@@ -94,7 +101,8 @@ ZAMKNIĘCIE (5 min):
 • Oklask dla każdego występu` },
 
     { title: "Bałwanki i pierwsze crossovers", duration: 60, order: 3,
-      objectives: "Jazda bałwankiem (pompowanie). Wprowadzenie crossoverów w miejscu. Jazda z kijem.",
+      skillCodes: ["R3", "R4", "K1"],
+      objectives: "Jazda bałwankiem — pompowanie (R3). Wprowadzenie crossoverów w miejscu (R4). Jazda z kijem — trzymanie (K1).",
       notes: `ROZGRZEWKA (15 min):
 • Jazda swobodna + "statki kosmiczne" (dzieci wymijają się na boisku)
 • "Lustro" — dwójki, jeden jedzie, drugi naśladuje
@@ -115,7 +123,8 @@ ZAMKNIĘCIE (5 min):
 • Zapowiedź: "Następnym razem gramy prawdziwym krążkiem!"` },
 
     { title: "Krążek i prowadzenie forehand", duration: 60, order: 4,
-      objectives: "Trzymanie kija. Prowadzenie krążka forehand. Strzał z miejsca (forehand).",
+      skillCodes: ["K1", "K2", "S1", "S8"],
+      objectives: "Trzymanie kija — chwyt (K1). Prowadzenie krążka forehand (K2). Strzał z miejsca forehand (S1). Celowanie dół bramki (S8).",
       notes: `ROZGRZEWKA (15 min):
 • Bałwanki tam i z powrotem (4 × 20m)
 • "Złodziej krążków" — każdy ma krążek, pilnuje swojego i kradnie innym
@@ -135,7 +144,8 @@ ZAMKNIĘCIE (5 min):
 • Strzały konkursowe — kto trafi w pachołek na bramce (zabawa)` },
 
     { title: "Hamowanie i zmiany kierunku", duration: 60, order: 5,
-      objectives: "Hamowanie T-stop. Szybkie starty. Zmiana kierunku z krążkiem.",
+      skillCodes: ["R8", "R9", "K5", "K2"],
+      objectives: "Hamowanie T-stop (R9). Szybkie starty. Zmiana kierunku z krążkiem. Prowadzenie z głową w górze (K5).",
       notes: `ROZGRZEWKA (15 min):
 • Swobodna jazda z krążkiem — każdy prowadzi na boisku
 • "Bomba" — trener gwiżdże, wszyscy hamują w 3 sekundy (kto ostatni = pompki)
@@ -155,6 +165,7 @@ ZAMKNIĘCIE (5 min):
 • Rozciąganie razem w kole. Zapowiedź: "Następnym razem TEST ROLKARZA — mierzymy wasze super moce!"` },
 
     { title: "TEST ROLKARZA — pomiar wstępny (T1-T6)", duration: 60, order: 6,
+      skillCodes: ["R1","R2","R5","K2","P4","C4"],
       objectives: "Pomiar bazowy 6 parametrów: sprint 20m, slalom, jazda tyłem 15m, podanie celne ×5, prowadzenie krążka slalom, wytrzymałość kursowanie 240m.",
       notes: `ROZGRZEWKA (12 min):
 • Marsz → trucht → boczne przeskoki → wykroki → krążenie ramion (po 30s)
@@ -178,7 +189,8 @@ ZAMKNIĘCIE (5 min):
 • Przybicie piątek` },
 
     { title: "Jazda tyłem — wprowadzenie", duration: 60, order: 7,
-      objectives: "Jazda tyłem na dwóch nogach. Bałwanki tyłem. Cofanie z krążkiem.",
+      skillCodes: ["R5","R6","K3","O2"],
+      objectives: "Jazda tyłem na dwóch nogach (R5). Bałwanki tyłem (R6). Cofanie z krążkiem backhand (K3). Obrona 1v1 (O2).",
       notes: `ROZGRZEWKA (15 min):
 • Bałwanki przodem (rozgrzewka nóg)
 • "Cień" — dwójki: jeden jedzie przodem, drugi tyłem (twarzą do kolegi)
@@ -204,9 +216,12 @@ const MIKRUS_ROLKI_2: PhaseDef = {
   season: "roller-2026",
   planType: "SEASONAL",
   description: "Mezocykl 2: Podstawy techniczne (maj). Cel: crossovers, podania, strzał w ruchu.",
+  startDate: "2026-05-07",
+  dayPattern: "mon-thu",
   sessions: [
     { title: "Crossovers — jazda w łuku", duration: 60, order: 8,
-      objectives: "Crossover przód. Jazda w łuku w obie strony. Łączenie crossovera z prowadzeniem krążka.",
+      skillCodes: ["R4","K2","K5"],
+      objectives: "Crossover przód (R4). Jazda w łuku w obie strony. Prowadzenie krążka z crossoverem (K2, K5).",
       notes: `ROZGRZEWKA (15 min):
 • Jazda swobodna po obwodzie boiska (2 min na stronę)
 • "Osiem" — jazda w kształcie ósemki wokół 2 pachołków
@@ -226,7 +241,8 @@ ZAMKNIĘCIE (5 min):
 • Strzały konkursowe z łuku (po crossoverze)` },
 
     { title: "Podania — forehand po podłożu", duration: 60, order: 9,
-      objectives: "Podanie forehand po podłożu. Przyjęcie podania (cushioning). Podanie w dwójkach w ruchu.",
+      skillCodes: ["P1","P3","P5","K8"],
+      objectives: "Podanie forehand po podłożu (P1). Przyjęcie podania — cushioning (P3, K8). Podanie w ruchu (P5).",
       notes: `ROZGRZEWKA (15 min):
 • Dwójki: podanie do siebie stojąc (forehand-forehand) — 2 min
 • Jazda swobodna z podawaniem piłki tenisowej w parach
@@ -246,7 +262,8 @@ ZAMKNIĘCIE (5 min):
 • Konkurs: najdłuższe celne podanie (od linii do partnera)` },
 
     { title: "Strzał w ruchu + gra zespołowa", duration: 60, order: 10,
-      objectives: "Strzał nadgarstkowy w ruchu. Gra 3v3 z podaniami i strzałami.",
+      skillCodes: ["S1","S2","S6","P1","A1"],
+      objectives: "Strzał nadgarstkowy w ruchu (S2). Dobijanie (S6). Podanie + strzał (P1). Szukanie wolnych lodów (A1).",
       notes: `ROZGRZEWKA (15 min):
 • Prowadzenie krążka — slalom 6 pachołków + strzał (każdy 3 razy)
 • "Policjant" — jeden goni, reszta ucieka z krążkami
@@ -265,7 +282,8 @@ ZAMKNIĘCIE (5 min):
 • "MVP dnia" — dzieci głosują kto grał najbardziej zespołowo` },
 
     { title: "Cofanie + obrona 1-na-1", duration: 60, order: 11,
-      objectives: "Jazda tyłem z kontrolą. Gap control. Obrona 1v1.",
+      skillCodes: ["R7","O1","O2","O3","O4"],
+      objectives: "Crossover tyłem (R7). Gap control (O1). Jazda tyłem 1v1 (O2). Kij aktywny (O3). Poke check (O4).",
       notes: `ROZGRZEWKA (15 min):
 • Bałwanki tyłem (4 × 15m)
 • "Cień" — A jedzie przodem z krążkiem, B tyłem twarzą do A
@@ -284,7 +302,8 @@ ZAMKNIĘCIE (5 min):
 • "Najlepsza obrona dnia" — trener wskazuje i tłumaczy dlaczego` },
 
     { title: "Taktyka — give-and-go, gra na wolne lody", duration: 60, order: 12,
-      objectives: "Give-and-go w parach. Szukanie wolnej przestrzeni. Przygotowanie do turnieju.",
+      skillCodes: ["A1","A2","A4","P5","P9"],
+      objectives: "Give-and-go (A2). Szukanie wolnej przestrzeni (A1). Wejście do strefy carry-in (A4). Podanie w ruchu (P5). Podanie na wolne (P9).",
       notes: `ROZGRZEWKA (15 min):
 • Podania w trójkach w ruchu (trójkąt, jazda do przodu)
 • "Magnes" — jazda swobodna, na gwizdek zbierz się w trójkę jak najszybciej
@@ -303,7 +322,8 @@ ZAMKNIĘCIE (5 min):
 • Zapowiedź: "Za 2 tygodnie PRAWDZIWY turniej!"` },
 
     { title: "Przygotowanie do turnieju — scrimmage", duration: 60, order: 13,
-      objectives: "Symulacja meczowa. Zmiana składów. Test Rolkarza powtórzony (T1-T6).",
+      skillCodes: ["R1","R2","R5","K2","P1","S1","C4"],
+      objectives: "Symulacja meczowa. Test Rolkarza powtórzony (T1-T6). Pomiar postępu we wszystkich parametrach.",
       notes: `ROZGRZEWKA (10 min):
 • Jazda swobodna z krążkiem
 • Strzały na bramkę — forehand, 5 prób na rozgrzanie
@@ -322,7 +342,8 @@ ZAMKNIĘCIE (5 min):
 • "Brawo, urosliście!" — dyplomy za sezon rolek` },
 
     { title: "Turniej końcowy + zakończenie sezonu rolkowego", duration: 60, order: 14,
-      objectives: "Turniej rywalizacyjny (zabawa). Ceremonia zakończenia. Podsumowanie sezonu.",
+      skillCodes: ["A1","A2","P1","S1","O1"],
+      objectives: "Turniej rywalizacyjny. Gra zespołowa w praktyce (A1, A2, P1, S1, O1). Ceremonia zakończenia.",
       notes: `ROZGRZEWKA (10 min):
 • Jazda swobodna + gra "Zbieraj monety" (jak na zaj. 1 — porównanie)
 • Rozgrzewka z muzyką
@@ -350,9 +371,12 @@ const LETNI_BAZA: PhaseDef = {
   season: "summer-2026",
   planType: "MONTHLY",
   description: "Mezocykl czerwiec (tyg. 1-4). Ogólnorozwojowy + wytrzymałość tlenowa. Ekstensywny charakter.",
+  startDate: "2026-06-01",
+  dayPattern: "mon-thu-sat",
   sessions: [
     { title: "Tydzień 1 — Pn: Ogólnorozwojowy + rolki", duration: 90, order: 1,
-      objectives: "Koordynacja, siła funkcjonalna (masa ciała), jazda na rolkach — przyp. wzorców po przerwie.",
+      skillCodes: ["R1","R2","R3","R4","K2","K3","C1","C2","C3"],
+      objectives: "Koordynacja (C2), siła funkcjonalna (C1, C3). Pozycja hokejowa (R1), bałwanki (R3), crossovers (R4), prowadzenie F/B (K2, K3).",
       notes: `ROZGRZEWKA (20 min):
 • Trucht 5 min + mobilność dynamiczna (biodra, barki, kolana)
 • Koordynacja: drabinka koordynacyjna — 6 wzorców (naprzemienny, boczny, karaoke, pajacyk, double-step, ickey shuffle)
@@ -373,7 +397,8 @@ SCHŁADZANIE (10 min):
 • Trucht lekki 3 min + stretching statyczny (kwadricepsy, dwugłowe, łydki, barki)` },
 
     { title: "Tydzień 1 — Czw: Wytrzymałość tlenowa + technika kija", duration: 90, order: 2,
-      objectives: "Bieg ciągły / fartlek. Technika podań i strzałów na rolkach.",
+      skillCodes: ["P1","P3","K8","S1","S2","C4"],
+      objectives: "Wytrzymałość tlenowa fartlek (C4). Podanie forehand (P1), przyjęcie (P3, K8). Strzał wrist z miejsca i w ruchu (S1, S2).",
       notes: `ROZGRZEWKA (15 min):
 • Trucht 5 min + rozciąganie dynamiczne
 • ABC biegowe: skip A, skip C, kolana do klatki, pięty do pośladków
@@ -397,7 +422,8 @@ SCHŁADZANIE (10 min):
 • Stretching + omówienie` },
 
     { title: "Tydzień 1 — Sb: Sala / siłownia", duration: 60, order: 3,
-      objectives: "Plyometria. Wzorce ruchowe. Core stability.",
+      skillCodes: ["C1","C3","C5"],
+      objectives: "Plyometria (C3). Wzorce ruchowe — przysiady, martwy ciąg, wiosłowanie (C1). Core stability (C5).",
       notes: `ROZGRZEWKA (15 min):
 • Trucht + mobilność + ABC biegowe
 
@@ -418,7 +444,8 @@ CORE (10 min):
 • Dead bug 10/stronę × 2` },
 
     { title: "Tydzień 2 — Pn: Wytrzymałość + crossovers", duration: 90, order: 4,
-      objectives: "Bieg ciągły 25 min. Crossovers przód i tył na rolkach.",
+      skillCodes: ["R4","R7","K2","K3","C4"],
+      objectives: "Wytrzymałość tlenowa 25 min (C4). Crossover przód (R4) i tył (R7). Prowadzenie F/B w ósemce (K2, K3).",
       notes: `ROZGRZEWKA (15 min):
 • Trucht + mobilność
 • Drabinka koordynacyjna — 4 nowe wzorce
@@ -444,9 +471,12 @@ const LETNI_BUDOWA: PhaseDef = {
   season: "summer-2026",
   planType: "MONTHLY",
   description: "Mezocykl lipiec (tyg. 5-8). Szybkość + siła funkcjonalna. Interwały, eksplozywność. Technika kija z puck handlingiem.",
+  startDate: "2026-07-06",
+  dayPattern: "mon-thu-sat",
   sessions: [
     { title: "Tydzień 5 — Pn: Interwały + szybkość na rolkach", duration: 90, order: 1,
-      objectives: "Interwały anaerobowe. Starty eksplozywne na rolkach. Szybkość z krążkiem.",
+      skillCodes: ["R10","K5","K10","C3","C4"],
+      objectives: "Interwały anaerobowe (C4). Starty eksplozywne — hockey stop (R10). Szybkość z krążkiem (K10). Prowadzenie z głową (K5). Zwinność (C3).",
       notes: `ROZGRZEWKA (15 min):
 • Trucht 5 min + mobilność + aktywacja (przysiady z wyskokiem × 5)
 
@@ -468,7 +498,8 @@ SCHŁADZANIE (5 min):
 • Stretching krótki` },
 
     { title: "Tydzień 5 — Czw: Siła eksplozywna + strzały", duration: 90, order: 2,
-      objectives: "Siła eksplozywna (kettlebell, box jumps). Technika strzału: wrist, snap, one-timer.",
+      skillCodes: ["S1","S2","S3","S5","S6","S7","C1","C3"],
+      objectives: "Siła eksplozywna (C1, C3). Strzał wrist (S1, S2), backhand (S3), snap (S5), one-timer (S7), dobijanie (S6).",
       notes: `ROZGRZEWKA (15 min):
 • Trucht + ABC biegowe + aktywacja nerwowo-mięśniowa
 
@@ -493,7 +524,8 @@ SCHŁADZANIE (5 min):
 • Stretching + hydratacja` },
 
     { title: "Tydzień 5 — Sb: Zwinność + core", duration: 60, order: 3,
-      objectives: "T-Test, Illinois, 5-10-5. Core stability zaawansowany.",
+      skillCodes: ["C3","C5"],
+      objectives: "Zwinność: T-Test, Illinois, 5-10-5 (C3). Core zaawansowany: Pallof press, farmers walk (C5).",
       notes: `ROZGRZEWKA (15 min):
 • Trucht + mobilność + drabinka koordynacyjna
 
@@ -518,9 +550,12 @@ const LETNI_SZLIF: PhaseDef = {
   season: "summer-2026",
   planType: "MONTHLY",
   description: "Mezocykl sierpień (tyg. 9-12). Gry małe + specjalizacja techniczna. Przygotowanie do sezonu lodowego.",
+  startDate: "2026-08-03",
+  dayPattern: "mon-thu-sat",
   sessions: [
     { title: "Tydzień 9 — Pn: Gry małe + sytuacje taktyczne", duration: 90, order: 1,
-      objectives: "Gry 2v1, 2v2, 3v2. Wejście do strefy. Gra pod presją.",
+      skillCodes: ["A1","A2","A4","A10","O1","O2","O5","P9"],
+      objectives: "2v1/2v2/3v2 — wolne lody (A1), give-and-go (A2), carry-in (A4), kreowanie 2v1 (A10). Obrona gap (O1), cofanie (O2), blokowanie podania (O5). Podanie na wolne (P9).",
       notes: `ROZGRZEWKA (15 min):
 • Jazda swobodna z krążkiem 5 min
 • Podania w trójkach w ruchu (trójkąt) 5 min
@@ -541,7 +576,8 @@ SCHŁADZANIE (10 min):
 • Stretching + omówienie kluczowych momentów` },
 
     { title: "Tydzień 9 — Czw: Power play + osłabienie", duration: 90, order: 2,
-      objectives: "Gra w przewadze 4v3. Gra w osłabieniu. Rzuty karne.",
+      skillCodes: ["A11","O5","O6","S1","S3","K7"],
+      objectives: "Power play (A11). Blokowanie linii podania (O5), shot block (O6). Strzał forehand (S1), backhand (S3). Deking 1v1 (K7).",
       notes: `ROZGRZEWKA (15 min):
 • Podania szybkie w czwórkach (kwadrat) 5 min
 • Strzały snap/wrist × 8
@@ -564,7 +600,8 @@ SCHŁADZANIE (10 min):
 • Stretching` },
 
     { title: "Tydzień 12 — Testy sprawności końcowe", duration: 90, order: 3,
-      objectives: "Pomiar końcowy: sprint 10m, shuttle, Illinois, slalom+strzał, Cooper 6 min, strzały do celu.",
+      skillCodes: ["C3","C4","K10","S1","S8"],
+      objectives: "Testy końcowe: sprint (C3), shuttle, Illinois, slalom+strzał (K10), Cooper (C4), strzały do celu (S1, S8).",
       notes: `ROZGRZEWKA (15 min):
 • Trucht + mobilność + oswojenie torów testowych
 
@@ -585,6 +622,39 @@ ZAMKNIĘCIE (5 min):
 • Zapowiedź: wrzesień = rolki + HLH, listopad = LÓD` },
   ],
 };
+
+// ═══════════════════════════════════════════════════════════════
+// GENERATOR DAT
+// ═══════════════════════════════════════════════════════════════
+
+function generateDates(startDate: string, pattern: string, count: number): Date[] {
+  const dates: Date[] = [];
+  const start = new Date(startDate + "T19:00:00");
+  const dayMap: Record<string, number[]> = {
+    "mon-thu": [1, 4],           // poniedziałek, czwartek
+    "mon-thu-sat": [1, 4, 6],   // poniedziałek, czwartek, sobota
+  };
+  const targetDays = dayMap[pattern] || [1, 4];
+  const current = new Date(start);
+
+  // Cofnij do poniedziałku tygodnia startowego
+  while (current.getDay() !== targetDays[0]) {
+    current.setDate(current.getDate() - 1);
+  }
+
+  while (dates.length < count) {
+    if (targetDays.includes(current.getDay())) {
+      const d = new Date(current);
+      // Sobotnie treningi o 10:00, reszta o 19:00
+      d.setHours(current.getDay() === 6 ? 10 : 19, 0, 0, 0);
+      if (d >= start || dates.length === 0) {
+        dates.push(d);
+      }
+    }
+    current.setDate(current.getDate() + 1);
+  }
+  return dates;
+}
 
 // ═══════════════════════════════════════════════════════════════
 // GŁÓWNA FUNKCJA SEED
@@ -661,9 +731,16 @@ async function main() {
       });
       console.log(`   📂 Faza: ${phase.name} (${phase.sessions.length} sesji)`);
 
-      // Utwórz sesje treningowe
-      for (const session of phase.sessions) {
-        await prisma.trainingSession.create({
+      // Utwórz sesje treningowe z datami i powiązaniami z umiejętnościami
+      const phaseDates = phase.startDate && phase.dayPattern
+        ? generateDates(phase.startDate, phase.dayPattern, phase.sessions.length)
+        : [];
+
+      for (let i = 0; i < phase.sessions.length; i++) {
+        const session = phase.sessions[i];
+        const sessionDate = phaseDates[i] || null;
+
+        const createdSession = await prisma.trainingSession.create({
           data: {
             planId: phasePlan.id,
             title: session.title,
@@ -671,8 +748,32 @@ async function main() {
             objectives: session.objectives,
             notes: session.notes,
             order: session.order,
+            date: sessionDate,
           },
         });
+
+        // Powiąż sesję z umiejętnościami Grutha (SessionSkillFocus)
+        if (session.skillCodes && session.skillCodes.length > 0) {
+          for (const code of session.skillCodes) {
+            const skill = await prisma.skillDefinition.findUnique({
+              where: { code },
+            });
+            if (skill) {
+              await prisma.sessionSkillFocus.create({
+                data: {
+                  sessionId: createdSession.id,
+                  skillId: skill.id,
+                  intensity: session.order <= 3 ? "INTRO" : session.order <= 10 ? "TRAIN" : "DRILL",
+                },
+              });
+            }
+          }
+        }
+
+        if (sessionDate) {
+          const dateStr = sessionDate.toLocaleDateString("pl-PL", { weekday: "short", day: "2-digit", month: "2-digit" });
+          console.log(`      📅 ${dateStr} — ${session.title}${session.skillCodes ? ` [${session.skillCodes.join(",")}]` : ""}`);
+        }
       }
     }
   }
@@ -682,7 +783,10 @@ async function main() {
     0
   );
   console.log(`\n✅ Gotowe! Utworzono ${ALL_PROGRAMS.length} programów z ${totalSessions} sesjami treningowymi.`);
-  console.log("   Wejdź w Dashboard → Szkolenie → zobaczysz plany z treścią.");
+  console.log("   📅 Sesje zsynchronizowane z kalendarzem (Pn/Czw/Sb od kwietnia 2026)");
+  console.log("   🏒 Sesje powiązane z umiejętnościami Grutha (Karta Rozwoju)");
+  console.log("   Wejdź w Dashboard → Szkolenie / Kalendarz → zobaczysz plany z treścią.");
+  console.log("\n⚠️  UWAGA: Uruchom NAJPIERW seed-skills.ts żeby powiązania z Kartą Rozwoju zadziałały!");
 }
 
 main()
