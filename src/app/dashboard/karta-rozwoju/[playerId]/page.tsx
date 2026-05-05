@@ -141,7 +141,7 @@ export default function KartaRozwojuPlayerPage() {
             ...cat,
             skills: cat.skills.map((s) =>
               s.id === skillId
-                ? { ...s, assessment: { grade, assessedAt: new Date().toISOString(), notes: null, assessedBy: null } }
+                ? { ...s, assessment: { grade, assessedAt: new Date().toISOString(), notes: undefined, assessedBy: undefined } }
                 : s
             ),
           }))
