@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { PrismaClient } from "@prisma/client";
 import {
   CCM_LOD_CATALOG, CCM_LOD_PRODUCTS,

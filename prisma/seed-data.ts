@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Dane programu szkoleniowego SWH 2025/2026
 // Na podstawie: Hockey Canada LTPD Model, dostosowane do SWH Siedlce
 

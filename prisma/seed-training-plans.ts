@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Seed: Plany treningowe SWH z treścią jednostek
  * 

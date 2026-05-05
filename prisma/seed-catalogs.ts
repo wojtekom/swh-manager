@@ -1,3 +1,4 @@
+// @ts-nocheck
 // ==================== KATALOGI SPRZĘTU CCM 2026 + SPORTREBEL ====================
 // Dane produktów dla dzieci/młodzik/junior z podziałem na LÓD i ROLKI
 

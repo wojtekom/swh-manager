@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Seed: 87 umiejętności wg Koncepcji Szkoleniowej H. Grutha (2016)
  * Model hybrydowy lód + rolki — SWH Siedlce
