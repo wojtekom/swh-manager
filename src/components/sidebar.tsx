@@ -25,6 +25,8 @@ import {
   CalendarDays,
   Upload,
   Bell,
+  Timer,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -43,6 +45,8 @@ const NAV_ITEMS = [
   { href: "/dashboard/camps", label: "Obozy", icon: Tent, roles: ["ADMIN", "COACH", "PARENT", "PLAYER"] },
   { href: "/dashboard/training", label: "Szkolenie", icon: BookOpen, roles: ["ADMIN", "COACH", "PARENT"] },
   { href: "/dashboard/karta-rozwoju", label: "Karty Rozwoju", icon: ClipboardList, roles: ["ADMIN", "COACH"] },
+  { href: "/dashboard/test-rolkarza", label: "Test Rolkarza", icon: Timer, roles: ["ADMIN", "COACH"] },
+  { href: "/dashboard/dziennik-pzsw", label: "Dziennik PZSW", icon: FileText, roles: ["ADMIN", "COACH"] },
   { href: "/dashboard/notifications", label: "Powiadomienia", icon: Bell, roles: ["ADMIN", "COACH", "PARENT", "PLAYER"] },
   { href: "/dashboard/calendar", label: "Kalendarz", icon: CalendarDays, roles: ["ADMIN", "COACH", "PARENT", "PLAYER"] },
   { href: "/dashboard/equipment", label: "Sprzęt", icon: Package, roles: ["ADMIN", "COACH"] },
