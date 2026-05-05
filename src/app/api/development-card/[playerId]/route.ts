@@ -47,7 +47,60 @@ export async function GET(
       orderBy: { sortOrder: "asc" },
     });
 
-    const latestAssessments={};for(const a of player.skillAssessments){if(!latestAssessments[a.skillId]){latestAssessments[a.skillId]={grade:a.grade,assessedAt:a.assessedAt.toISOString(),notes:a.notes,assessedBy:a.assessedBy}}}const groupedSkills=CATEGORIES.map(cat=>({...cat,skills:skills.filter(s=>s.category===cat.key).map(s=>({...s,assessment:latestAssessments[s.id]||null}))}));const fitnessByType={};for(const ft of player.fitnessTests){if(!fitnessByType[ft.testType])fitnessByType[ft.testType]={};if(!fitnessByType[ft.testType][ft.period]){fitnessByType[ft.testType][ft.period]={result:ft.result,testDate:ft.testDate.toISOString(),notes:ft.notes}}}const groupName=player.groupMembers[0]?.group?.name||null;return NextResponse.json({player:{id:player.id,firstName:player.firstName,lastName:player.lastName,dateOfBirth:player.dateOfBirth,category:player.category,groupName},categories:groupedSkills,fitnessTests:fitnessByType,assessmentCount:player.skillAssessments.length})}catch(err){console.error("Błąd pobierania karty rozwoju:",err);return NextResponse.json({error:"Błąd serwera"},{status:500})}}
+    // Ostatnie oceny per umiejętność
+    const latestAssessments: Record<string, { grade: string; assessedAt: string; notes: string | null; assessedBy: string | null }> = {};
+    for (const a of player.skillAssessments) {
+      if (!latestAssessments[a.skillId]) {
+        latestAssessments[a.skillId] = {
+          grade: a.grade,
+          assessedAt: a.assessedAt.toISOString(),
+          notes: a.notes,
+          assessedBy: a.assessedBy,
+        };
+      }
+    }
+
+    // Grupowanie umiejętności per kategoria
+    const groupedSkills = CATEGORIES.map((cat) => ({
+      ...cat,
+      skills: skills
+        .filter((s) => s.category === cat.key)
+        .map((s) => ({ ...s, assessment: latestAssessments[s.id] || null })),
+    }));
+
+    // Testy sprawnościowe per typ i okres
+    const fitnessByType: Record<string, Record<string, { result: string; testDate: string; notes: string | null }>> = {};
+    for (const ft of player.fitnessTests) {
+      if (!fitnessByType[ft.testType]) fitnessByType[ft.testType] = {};
+      if (!fitnessByType[ft.testType][ft.period]) {
+        fitnessByType[ft.testType][ft.period] = {
+          result: ft.result,
+          testDate: ft.testDate.toISOString(),
+          notes: ft.notes,
+        };
+      }
+    }
+
+    const groupName = player.groupMembers[0]?.group?.name || null;
+
+    return NextResponse.json({
+      player: {
+        id: player.id,
+        firstName: player.firstName,
+        lastName: player.lastName,
+        dateOfBirth: player.dateOfBirth,
+        category: player.category,
+        groupName,
+      },
+      categories: groupedSkills,
+      fitnessTests: fitnessByType,
+      assessmentCount: player.skillAssessments.length,
+    });
+  } catch (err) {
+    console.error("Błąd pobierania karty rozwoju:", err);
+    return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
+  }
+}
 
 export async function POST(
   request: NextRequest,
