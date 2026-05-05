@@ -61,17 +61,17 @@ const MIKRUS_ROLKI: PhaseDef = {
       objectives: "Prawidłowa postawa (R1). Jazda przodem na dwóch nogach (R2). Bezpieczne hamowanie pługiem (R8).",
       notes: `ROZGRZEWKA (15 min):
 • Marsz w rolkach na dywaniku/gumie — poczucie kółek
-• "Robot" — sztywne nogi, małe kroczki do przodu
-• Gra: "Zamrożony tag" — kto zostanie dotknięty, stoi w rozkroku, kolega przejeżdża pod ręką
+• 'Robot' — sztywne nogi, małe kroczki do przodu
+• Gra: 'Zamrożony tag' — kto zostanie dotknięty, stoi w rozkroku, kolega przejeżdża pod ręką
 
 CZĘŚĆ GŁÓWNA (25 min):
-• Pozycja hokejowa — kolana ugięte, ręce do przodu, pokaz "krzesełko"
+• Pozycja hokejowa — kolana ugięte, ręce do przodu, pokaz 'krzesełko'
 • Jazda przodem — bałwanki (pompowanie na dwóch nogach)
-• Hamowanie pługiem — "robimy pizzę" (stopy do środka)
+• Hamowanie pługiem — 'robimy pizzę' (stopy do środka)
 • Tor przeszkód prosty — pachołki co 3m, przejazd wolny, hamowanie na końcu
 
 GRA (15 min):
-• "Zbieraj monety" — krążki rozrzucone po boisku, kto zbierze więcej (jazda + przysiady)
+• 'Zbieraj monety' — krążki rozrzucone po boisku, kto zbierze więcej (jazda + przysiady)
 • Swobodna jazda z muzyką
 
 ZAMKNIĘCIE (5 min):
@@ -88,13 +88,13 @@ ZAMKNIĘCIE (5 min):
 
 CZĘŚĆ GŁÓWNA (25 min):
 • Ślizgi na dwóch nogach — popychanie się i jazda bez odpychania
-• Ślizgi na jednej nodze — "Flaming" (5 sek na prawej, 5 na lewej)
+• Ślizgi na jednej nodze — 'Flaming' (5 sek na prawej, 5 na lewej)
 • Wstawanie po upadku — ćwiczone celowo: kolano → stopka → wstań (x5)
 • Stacja: slalom między pachołkami (co 2m, wolne tempo)
 
 GRA (15 min):
-• "Czerwone/zielone światło" — trener krzyczy kolor, dzieci jadą/hamują
-• "Wyścig żółwi" — kto dojedzie NAJWOLNIEJ do linii (kontrola prędkości)
+• 'Czerwone/zielone światło' — trener krzyczy kolor, dzieci jadą/hamują
+• 'Wyścig żółwi' — kto dojedzie NAJWOLNIEJ do linii (kontrola prędkości)
 
 ZAMKNIĘCIE (5 min):
 • Pokaz — kto chce pokazać swój ulubiony element z dzisiejszych zajęć
@@ -104,8 +104,8 @@ ZAMKNIĘCIE (5 min):
       skillCodes: ["R3", "R4", "K1"],
       objectives: "Jazda bałwankiem — pompowanie (R3). Wprowadzenie crossoverów w miejscu (R4). Jazda z kijem — trzymanie (K1).",
       notes: `ROZGRZEWKA (15 min):
-• Jazda swobodna + "statki kosmiczne" (dzieci wymijają się na boisku)
-• "Lustro" — dwójki, jeden jedzie, drugi naśladuje
+• Jazda swobodna + 'statki kosmiczne' (dzieci wymijają się na boisku)
+• 'Lustro' — dwójki, jeden jedzie, drugi naśladuje
 • Rozciąganie dynamiczne z kijem (kij nad głową, skręty, wykroki)
 
 CZĘŚĆ GŁÓWNA (25 min):
@@ -115,11 +115,11 @@ CZĘŚĆ GŁÓWNA (25 min):
 • Jazda z kijem — trzymanie oburącz, prowadzenie piłki tenisowej (lekka, łatwiej niż krążek)
 
 GRA (15 min):
-• "Pasterz i owieczki" — prowadzenie piłki kijem do "zagrody" (bramka)
+• 'Pasterz i owieczki' — prowadzenie piłki kijem do "zagrody" (bramka)
 • Mini mecz 3v3 — piłka tenisowa, bez bramkarza, bramki z pachołków
 
 ZAMKNIĘCIE (5 min):
-• "Dziś nauczyłem się..." — każde dziecko kończy zdanie
+• 'Dziś nauczyłem się...' — każde dziecko kończy zdanie
 • Zapowiedź: "Następnym razem gramy prawdziwym krążkiem!"` },
 
     { title: "Krążek i prowadzenie forehand", duration: 60, order: 4,
@@ -127,7 +127,7 @@ ZAMKNIĘCIE (5 min):
       objectives: "Trzymanie kija — chwyt (K1). Prowadzenie krążka forehand (K2). Strzał z miejsca forehand (S1). Celowanie dół bramki (S8).",
       notes: `ROZGRZEWKA (15 min):
 • Bałwanki tam i z powrotem (4 × 20m)
-• "Złodziej krążków" — każdy ma krążek, pilnuje swojego i kradnie innym
+• 'Złodziej krążków' — każdy ma krążek, pilnuje swojego i kradnie innym
 • Rozgrzewka z kijem — kij jako przeszkoda (przeskoki, podskoki)
 
 CZĘŚĆ GŁÓWNA (25 min):
@@ -137,7 +137,7 @@ CZĘŚĆ GŁÓWNA (25 min):
 • Strzał z miejsca — forehand, cel: bramka 3m. Pokaz transferu wagi z nogi tylnej na przednią.
 
 GRA (15 min):
-• "Gol dnia" — każdy ma 3 strzały, trener komentuje najlepsze
+• 'Gol dnia' — każdy ma 3 strzały, trener komentuje najlepsze
 • Mecz 3v3 — krążek rolkowy, bez bramkarza
 
 ZAMKNIĘCIE (5 min):
@@ -148,7 +148,7 @@ ZAMKNIĘCIE (5 min):
       objectives: "Hamowanie T-stop (R9). Szybkie starty. Zmiana kierunku z krążkiem. Prowadzenie z głową w górze (K5).",
       notes: `ROZGRZEWKA (15 min):
 • Swobodna jazda z krążkiem — każdy prowadzi na boisku
-• "Bomba" — trener gwiżdże, wszyscy hamują w 3 sekundy (kto ostatni = pompki)
+• 'Bomba' — trener gwiżdże, wszyscy hamują w 3 sekundy (kto ostatni = pompki)
 • Przysiady na rolkach, pajacyki (równowaga dynamiczna)
 
 CZĘŚĆ GŁÓWNA (25 min):
@@ -182,7 +182,7 @@ TESTY (36 min — 6 min na test):
 • T6 Kursowanie wytrzymałościowe 4×60m (240m) — jeden czas
 
 GRA (7 min):
-• Swobodna gra 3v3 — "nagroda" po testach
+• Swobodna gra 3v3 — 'nagroda' po testach
 
 ZAMKNIĘCIE (5 min):
 • "Wyniki są wasze — za 2 miesiące zrobimy to samo i zobaczycie ile urosliście"
@@ -193,8 +193,8 @@ ZAMKNIĘCIE (5 min):
       objectives: "Jazda tyłem na dwóch nogach (R5). Bałwanki tyłem (R6). Cofanie z krążkiem backhand (K3). Obrona 1v1 (O2).",
       notes: `ROZGRZEWKA (15 min):
 • Bałwanki przodem (rozgrzewka nóg)
-• "Cień" — dwójki: jeden jedzie przodem, drugi tyłem (twarzą do kolegi)
-• Gra: "Lustro tyłem" — trener jedzie tyłem, dzieci kopiują
+• 'Cień' — dwójki: jeden jedzie przodem, drugi tyłem (twarzą do kolegi)
+• Gra: 'Lustro tyłem' — trener jedzie tyłem, dzieci kopiują
 
 CZĘŚĆ GŁÓWNA (25 min):
 • Jazda tyłem — ślizgi na dwóch nogach (odpychanie od bandy, jazda tyłem do pachołka)
@@ -203,7 +203,7 @@ CZĘŚĆ GŁÓWNA (25 min):
 • Cofanie z krążkiem — prowadzenie backhand jadąc do tyłu (wolno!)
 
 GRA (15 min):
-• "Obrońca" — obrońca jedzie tyłem, napastnik przodem, 1v1 do bramki
+• 'Obrońca' — obrońca jedzie tyłem, napastnik przodem, 1v1 do bramki
 • Mecz 3v3 z zasadą: obrońca MUSI cofać się tyłem (ćwiczenie w grze)
 
 ZAMKNIĘCIE (5 min):
@@ -234,7 +234,7 @@ CZĘŚĆ GŁÓWNA (25 min):
 • Crossover z krążkiem — jazda wokół koła z prowadzeniem forehand
 
 GRA (15 min):
-• "Tornado" — wszyscy jadą w jednym kierunku po kole, na gwizdek zmiana kierunku
+• 'Tornado' — wszyscy jadą w jednym kierunku po kole, na gwizdek zmiana kierunku
 • Mecz 3v3 z bramkami przy bandzie (wymusza crossovers na zakrętach)
 
 ZAMKNIĘCIE (5 min):
@@ -255,7 +255,7 @@ CZĘŚĆ GŁÓWNA (25 min):
 • Podanie w ruchu — dwójki jadą obok siebie, podają co 5m
 
 GRA (15 min):
-• "Gorący kartofel" — koło, podawanie krążka, na gwizdek kto ma = 5 bałwanków
+• 'Gorący kartofel' — koło, podawanie krążka, na gwizdek kto ma = 5 bałwanków
 • Mecz 3v3 — gol liczy się TYLKO po podaniu (wymusza współpracę)
 
 ZAMKNIĘCIE (5 min):
@@ -279,14 +279,14 @@ GRA (15 min):
 • Reguła: gol z podania = 2 punkty (zachęta do gry zespołowej)
 
 ZAMKNIĘCIE (5 min):
-• "MVP dnia" — dzieci głosują kto grał najbardziej zespołowo` },
+• 'MVP dnia' — dzieci głosują kto grał najbardziej zespołowo` },
 
     { title: "Cofanie + obrona 1-na-1", duration: 60, order: 11,
       skillCodes: ["R7","O1","O2","O3","O4"],
       objectives: "Crossover tyłem (R7). Gap control (O1). Jazda tyłem 1v1 (O2). Kij aktywny (O3). Poke check (O4).",
       notes: `ROZGRZEWKA (15 min):
 • Bałwanki tyłem (4 × 15m)
-• "Cień" — A jedzie przodem z krążkiem, B tyłem twarzą do A
+• 'Cień' — A jedzie przodem z krążkiem, B tyłem twarzą do A
 • Rozciąganie + wzmacnianie: deski 30s × 3
 
 CZĘŚĆ GŁÓWNA (25 min):
@@ -306,7 +306,7 @@ ZAMKNIĘCIE (5 min):
       objectives: "Give-and-go (A2). Szukanie wolnej przestrzeni (A1). Wejście do strefy carry-in (A4). Podanie w ruchu (P5). Podanie na wolne (P9).",
       notes: `ROZGRZEWKA (15 min):
 • Podania w trójkach w ruchu (trójkąt, jazda do przodu)
-• "Magnes" — jazda swobodna, na gwizdek zbierz się w trójkę jak najszybciej
+• 'Magnes' — jazda swobodna, na gwizdek zbierz się w trójkę jak najszybciej
 
 CZĘŚĆ GŁÓWNA (25 min):
 • Give-and-go — A podaje do B, natychmiast rusza do przodu, B oddaje, A strzela
@@ -345,7 +345,7 @@ ZAMKNIĘCIE (5 min):
       skillCodes: ["A1","A2","P1","S1","O1"],
       objectives: "Turniej rywalizacyjny. Gra zespołowa w praktyce (A1, A2, P1, S1, O1). Ceremonia zakończenia.",
       notes: `ROZGRZEWKA (10 min):
-• Jazda swobodna + gra "Zbieraj monety" (jak na zaj. 1 — porównanie)
+• Jazda swobodna + gra 'Zbieraj monety' (jak na zaj. 1 — porównanie)
 • Rozgrzewka z muzyką
 
 TURNIEJ (40 min):
@@ -355,7 +355,7 @@ TURNIEJ (40 min):
 • Fair play: trener podkreśla dobre zagrania (nie tylko gole)
 
 ZAKOŃCZENIE (10 min):
-• Zbiórka w kole — każde dziecko mówi "mój najlepszy moment sezonu"
+• Zbiórka w kole — każde dziecko mówi 'mój najlepszy moment sezonu'
 • Dyplomy za sezon rolkowy (imienne)
 • Klasyfikacja: podkreślamy POSTĘP nie wynik
 • Zdjęcie grupowe
@@ -458,7 +458,7 @@ ROLKI — CROSSOVERS (40 min):
 • Crossover przód — wokół koła, 5 okrążeń na stronę
 • Crossover tył — wokół koła, 3 okrążeń na stronę (wolniej!)
 • Crossover z krążkiem — slalom szeroki z przekładaniem nóg
-• Prowadzenie krążka forehand/backhand w „ósemce"
+• Prowadzenie krążka forehand/backhand w "ósemce"
 • Gra 3v3 z bramkami na rogach (wymusza crossovers)
 
 SCHŁADZANIE (10 min):
@@ -483,7 +483,7 @@ const LETNI_BUDOWA: PhaseDef = {
 INTERWAŁY (25 min):
 • Shuttle run: 5-10-5m × 6 powtórzeń, przerwa 90s
 • Sprint 20m × 4, przerwa 60s
-• „Hokejowe piątki": 30s max wysiłek, 2.5 min przerwa × 5
+• 'Hokejowe piątki': 30s max wysiłek, 2.5 min przerwa × 5
 
 ROLKI — SZYBKOŚĆ (30 min):
 • Starty eksplozywne — pozycja niska, 3 krótkie odpychania, sprint 15m × 6
@@ -518,7 +518,7 @@ STRZAŁY NA ROLKACH (35 min):
 • Dobijanie (rebound) — trener strzela w bramkarza/ścianę, dobitka × 8
 
 GRA (10 min):
-• „Snajper" — każdy 5 strzałów, trener liczy trafienia w cele
+• 'Snajper' — każdy 5 strzałów, trener liczy trafienia w cele
 
 SCHŁADZANIE (5 min):
 • Stretching + hydratacja` },
@@ -565,7 +565,7 @@ TAKTYKA (35 min):
 • 2v1 — napastnicy wchodzą do strefy, obrońca cofa się. Nacisk: podanie w odpowiednim momencie.
 • 2v2 — obaj obrońcy cofają się, napastnicy decydują: carry-in czy dump
 • 3v2 — trójkąt ofensywny, poszukiwanie wolnych lodów
-• Po każdej sytuacji: 30s omówienie „co zadziałało"
+• Po każdej sytuacji: 30s omówienie "co zadziałało"
 
 GRY MAŁE (30 min):
 • 3v3 ciągła gra — 90s zmiany, trener koryguje pozycjonowanie
@@ -583,7 +583,7 @@ SCHŁADZANIE (10 min):
 • Strzały snap/wrist × 8
 
 POWER PLAY (25 min):
-• 4v3 — ustawienie „diament" (1 wysoko, 2 na skrzydłach, 1 przed bramką)
+• 4v3 — ustawienie 'diament' (1 wysoko, 2 na skrzydłach, 1 przed bramką)
 • Rotacja: podanie → ruch → opcja strzału
 • 3v4 (osłabienie) — agresywny pressing, blokowanie linii podania
 • 5 prób w każdej formacji, rotacja zawodników

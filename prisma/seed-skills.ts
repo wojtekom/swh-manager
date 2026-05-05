@@ -32,10 +32,10 @@ const skills: SkillDef[] = [
   // ==================== 🛼 ROLKI (R1–R12) ====================
   { code: "R1",  name: "Prawidłowa postawa", category: "ROLKI", sortOrder: 100, expectedU8: "T", expectedU10: "D", expectedU12: "O" },
   { code: "R2",  name: "Jazda przodem — ślizgi na dwóch nogach", category: "ROLKI", sortOrder: 101, expectedU8: "T", expectedU10: "D", expectedU12: "O" },
-  { code: "R3",  name: "Jazda przodem — „bałwanek" (pompowanie)", category: "ROLKI", sortOrder: 102, expectedU8: "T", expectedU10: "D", expectedU12: "O" },
+  { code: "R3",  name: "Jazda przodem — 'bałwanek' (pompowanie)", category: "ROLKI", sortOrder: 102, expectedU8: "T", expectedU10: "D", expectedU12: "O" },
   { code: "R4",  name: "Jazda przodem — krzyżowanie (crossover)", category: "ROLKI", sortOrder: 103, expectedU8: "W", expectedU10: "T", expectedU12: "D", expectedU14: "O" },
   { code: "R5",  name: "Jazda tyłem — ślizgi na dwóch nogach", category: "ROLKI", sortOrder: 104, expectedU8: "W", expectedU10: "T", expectedU12: "D" },
-  { code: "R6",  name: "Jazda tyłem — „bałwanek"", category: "ROLKI", sortOrder: 105, expectedU8: "W", expectedU10: "T", expectedU12: "D" },
+  { code: "R6",  name: "Jazda tyłem — 'bałwanek'", category: "ROLKI", sortOrder: 105, expectedU8: "W", expectedU10: "T", expectedU12: "D" },
   { code: "R7",  name: "Jazda tyłem — krzyżowanie", category: "ROLKI", sortOrder: 106, expectedU10: "W", expectedU12: "T", expectedU14: "D" },
   { code: "R8",  name: "Hamowanie — pługiem", category: "ROLKI", sortOrder: 107, expectedU8: "T", expectedU10: "D", expectedU12: "O" },
   { code: "R9",  name: "Hamowanie — T-stop", category: "ROLKI", sortOrder: 108, expectedU8: "W", expectedU10: "T", expectedU12: "D" },
@@ -76,9 +76,9 @@ const skills: SkillDef[] = [
   { code: "P4",  name: "Przyjęcie podania — backhand", category: "PODANIA", sortOrder: 403, expectedU8: "W", expectedU10: "T", expectedU12: "D" },
   { code: "P5",  name: "Podanie w ruchu (przodem)", category: "PODANIA", sortOrder: 404, expectedU10: "W", expectedU12: "T", expectedU14: "D" },
   { code: "P6",  name: "Podanie w ruchu (tyłem)", category: "PODANIA", sortOrder: 405, expectedU12: "W", expectedU14: "T" },
-  { code: "P7",  name: "Podanie „na talerzu" (saucer pass)", category: "PODANIA", sortOrder: 406, expectedU12: "W", expectedU14: "T" },
+  { code: "P7",  name: "Podanie 'na talerzu' (saucer pass)", category: "PODANIA", sortOrder: 406, expectedU12: "W", expectedU14: "T" },
   { code: "P8",  name: "Podanie o bandę", category: "PODANIA", sortOrder: 407, expectedU10: "W", expectedU12: "T", expectedU14: "D" },
-  { code: "P9",  name: "Podanie „na wolne" (do pustego miejsca)", category: "PODANIA", sortOrder: 408, expectedU10: "W", expectedU12: "T", expectedU14: "D" },
+  { code: "P9",  name: "Podanie 'na wolne' (do pustego miejsca)", category: "PODANIA", sortOrder: 408, expectedU10: "W", expectedU12: "T", expectedU14: "D" },
   { code: "P10", name: "Podanie bez patrzenia (no-look)", category: "PODANIA", sortOrder: 409, expectedU14: "W" },
   { code: "P11", name: "Przyjęcie jednym dotykiem + podanie", category: "PODANIA", sortOrder: 410, expectedU12: "W", expectedU14: "T" },
   { code: "P12", name: "Podanie pod presją (obrońca na plecach)", category: "PODANIA", sortOrder: 411, expectedU12: "W", expectedU14: "T" },
@@ -111,7 +111,7 @@ const skills: SkillDef[] = [
   { code: "O11", name: "Pierwszy na krążku (compete level)", category: "OBRONA", sortOrder: 610, expectedU8: "W", expectedU10: "T", expectedU12: "D" },
 
   // ==================== ⚡ ATAK (A1–A13) ====================
-  { code: "A1",  name: "Jazda na „wolne lody" (finding open ice)", category: "ATAK", sortOrder: 700, expectedU8: "W", expectedU10: "T", expectedU12: "D" },
+  { code: "A1",  name: "Jazda na "wolne lody" (finding open ice)", category: "ATAK", sortOrder: 700, expectedU8: "W", expectedU10: "T", expectedU12: "D" },
   { code: "A2",  name: "Podanie i rusz (give-and-go)", category: "ATAK", sortOrder: 701, expectedU10: "W", expectedU12: "T", expectedU14: "D" },
   { code: "A3",  name: "Trójkąt ataku (triangle offense)", category: "ATAK", sortOrder: 702, expectedU12: "W", expectedU14: "T" },
   { code: "A4",  name: "Wejście do strefy — carry-in", category: "ATAK", sortOrder: 703, expectedU10: "W", expectedU12: "T", expectedU14: "D" },
