@@ -1,29 +1,31 @@
-Stop, nieporozumienie z mojej strony! To **nie jest moduł Szkolenie** — to **Dziennik Treningowy PZSW** (osobny moduł, integracja z programem MSiT "Łączą nas rolki"). I tu komunikat mówi:
+Coś dziwnego — **plany roczne zniknęły z bazy**! Wcześniej (15 minut temu) były znajdowane, teraz "nie znaleziono". Sprawdzę co jest w bazie:Aha, **plany roczne "Program roczny Mini Hokej/Młodzik — SWH 2025/2026" zostały skasowane** (prawdopodobnie wcześniejsze odpalenie `/api/seed-run` które kasuje plany z season `2025/2026`). Mój seed nie znalazł rodzica i pominął całość.
 
-> "Brak sesji z przypisanymi datami. **Uruchom seed-training-plans.ts**."
+Sprawdzę co jest z grupami:Grupy są: **Mini Hokej (U12)** i **Młodzik (U14)** - oba istnieją. Problem był taki, że mój endpoint przerywał gdy nie znalazł parent plana — a ten został wcześniej skasowany przez `/api/seed-run`. Naprawiam logikę: parent staje się opcjonalny.**Zmiana**: parent (plan roczny) jest teraz **opcjonalny** — jeśli go nie ma, podplan zostanie utworzony "samodzielnie", bez rodzica. Najważniejsze (`groupId` z grupy "Mini Hokej"/"Młodzik") działa niezależnie.
 
-Moje 32 sesje wylądowały w module Szkolenie (TrainingPlan + TrainingSession), a Wojtek od początku miał na myśli **terminarz w Dzienniku PZSW** — to inna część bazy. Sprawdzę co robi `seed-training-plans.ts`:**Mam diagnozę!** Dziennik PZSW filtruje sesje przez `TrainingPlan.groupId`. Mój podplan utworzony przed chwilą **nie ma ustawionego `groupId`** — dlatego dziennik go nie widzi, choć plan istnieje. Plus — grupa "Mini Hokej" w Twojej bazie ma `category=U12`, a nie U10 jak zakładałem.
+**Wgraj poprawkę:**
 
-Naprawiam endpoint — dodaję wyszukanie grupy po nazwie i ustawienie `groupId`:Gotowe. Co zmieniłem:
-- Dodałem wyszukiwanie `TrainingGroup` po nazwie (`Mini Hokej`, `Młodzik`)
-- Ustawiłem `groupId` na podplanie (kluczowe dla Dziennika PZSW)
-- W odpowiedzi seeda zobaczysz dokładnie jaką grupę znalazł (kategorię, id) — to potwierdzi czy wszystko się spina
+Otwórz **czysty link** (skopiuj sam URL, bez instrukcji):
 
-**Zaktualizuj endpoint na GitHubie:**
+```
+https://github.com/Wojtekom/swh-manager/blob/master/src/app/api/seed-letni/route.ts
+```
 
-1. Pobierz nowy `route.ts` (z linku powyżej)
-2. Wejdź w istniejący plik na GitHubie:  
-   `https://github.com/Wojtekom/swh-manager/blob/master/src/app/api/seed-letni/route.ts`
-3. Kliknij **ikonę ołówka ✏️** "Edit this file"
-4. **Ctrl+A → Delete** (skasuj całą zawartość)
-5. **Otwórz** mojego nowego `route` w nowej karcie, **Ctrl+A, Ctrl+C**, wróć do edytora GitHub i **Ctrl+V**
-6. Przewiń w dół → **"Commit changes"** → wiadomość: `Fix: dodaj groupId do podplanów żeby Dziennik PZSW je zobaczył`
-7. **Commit changes**
+Tam:
+1. Ikonka ołówka ✏️ w prawym górnym rogu nad treścią pliku
+2. Ctrl+A, Delete
+3. Otwórz mojego nowego `route` (link wyżej), Ctrl+A, Ctrl+C, wróć, Ctrl+V
+4. Commit message: `Fix: parent opcjonalny - podplany powstają nawet gdy plan roczny skasowany`
+5. Commit changes
 
-Po deploy Vercel (~2 min) — odpalimy ponownie:
+Po deploy (~2 min) odpalimy:
 ```
 https://swh-manager.vercel.app/api/seed-letni?key=letni2026
 ```
-Tym razem w odpowiedzi zobaczysz `Grupa: Mini Hokej (kategoria: U12, id=...)` co potwierdzi powiązanie. Potem odśwież Dziennik PZSW — sesje powinny się pojawić.
 
-Napisz "wgrane" gdy gotowe.
+Tym razem w odpowiedzi powinno być:
+- `Grupa: Mini Hokej (kategoria: U12, id=...)`
+- `✓ Utworzono podplan: Mini Hokej — Plan Letni 2026 [groupId=...]`
+
+I po tym Dziennik PZSW pokaże 16 sesji.
+
+Daj znać "wgrane".
