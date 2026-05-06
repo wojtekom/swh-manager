@@ -1,166 +1,29 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+Stop, nieporozumienie z mojej strony! To **nie jest moduł Szkolenie** — to **Dziennik Treningowy PZSW** (osobny moduł, integracja z programem MSiT "Łączą nas rolki"). I tu komunikat mówi:
 
-// TYMCZASOWY ENDPOINT — USUNĄĆ PO UŻYCIU
-// GET /api/seed-letni?key=letni2026
-//
-// Tworzy 2 podplany letnie (06.05–30.06.2026):
-//   - "Mini Hokej — Plan Letni 2026 (06.05–30.06)"  → podplan "Program roczny Mini Hokej..."
-//   - "Młodzik — Plan Letni 2026 (06.05–30.06)"     → podplan "Program roczny Młodzik..."
-//
-// 16 sesji × 2 grupy = 32 TrainingSession z konkretnymi datami i opisami.
-// Mini Hokej godzina 18:30, Młodzik godzina 19:30. Pn+Cz.
-//
-// Idempotentny: usuwa tylko podplany o nazwach zaczynających się od
-// "Mini Hokej — Plan Letni 2026" / "Młodzik — Plan Letni 2026" (po nazwie),
-// nie tyka Mikrusa, Konspektu Letniego SWH, Faza II Mlodzik, ani niczego innego.
+> "Brak sesji z przypisanymi datami. **Uruchom seed-training-plans.ts**."
 
-type SessionPlan = {
-  num: number;
-  date: string;
-  type: string;
-  title: string;
-  min: number;
-  phase: string;
-  levelMini: string;
-  levelMlodzik: string;
-  desc: string;
-};
+Moje 32 sesje wylądowały w module Szkolenie (TrainingPlan + TrainingSession), a Wojtek od początku miał na myśli **terminarz w Dzienniku PZSW** — to inna część bazy. Sprawdzę co robi `seed-training-plans.ts`:**Mam diagnozę!** Dziennik PZSW filtruje sesje przez `TrainingPlan.groupId`. Mój podplan utworzony przed chwilą **nie ma ustawionego `groupId`** — dlatego dziennik go nie widzi, choć plan istnieje. Plus — grupa "Mini Hokej" w Twojej bazie ma `category=U12`, a nie U10 jak zakładałem.
 
-const SESSIONS: SessionPlan[] = [
-  { num: 2,  date: "2026-05-08", type: "★PRE-T1",  title: "Forma turniejowa + polishing",                 min: 90, phase: "I",     levelMini: "Forma",        levelMlodzik: "Forma",        desc: "Rozgrzewka 10', powtórka kluczowych umiejętności 30', mini-mecze symulujące turniej 40', stretching 10'" },
-  { num: 3,  date: "2026-05-11", type: "POST-T1",  title: "Debrief T1 + korekta defensywy",               min: 90, phase: "I→II",  levelMini: "Korekta",      levelMlodzik: "Korekta",      desc: "Omówienie turnieju 15', ćwiczenia korekty błędów z T1 30', defensywa 1v1 i 2v2 30', gra swobodna 15'" },
-  { num: 4,  date: "2026-05-15", type: "B",        title: "Koniec Fazy I + aerob 25 min",                 min: 90, phase: "I→II",  levelMini: "Trenowanie",   levelMlodzik: "Doskonalenie", desc: "Rozgrzewka 10', ćwiczenia techniczne 30', BLOK AEROBOWY 25 min (test mowy), cooldown 25'" },
-  { num: 5,  date: "2026-05-18", type: "A",        title: "Wyprowadzenie z tercji — schematy 3-osobowe",  min: 90, phase: "II",    levelMini: "Trenowanie",   levelMlodzik: "Doskonalenie", desc: "Rozgrzewka 10', schematy 3-osobowe (trójkąt, ściana) 35', zastosowanie w grze 30', cooldown 15'" },
-  { num: 6,  date: "2026-05-22", type: "B",        title: "Przewaga 4v3 + aerob 25 min",                  min: 90, phase: "II",    levelMini: "Trenowanie",   levelMlodzik: "Doskonalenie", desc: "Rozgrzewka 10', ćwiczenia taktyczne 4v3 30', BLOK AEROBOWY 25 min (test mowy), cooldown 25'" },
-  { num: 7,  date: "2026-05-25", type: "★PRE-T2",  title: "Kombinacje 2v1 + forma turniejowa",            min: 90, phase: "II",    levelMini: "Forma",        levelMlodzik: "Forma",        desc: "Rozgrzewka 10', kombinacje 2v1 25', mini-mecze formowe 45', briefing przedturniejowy 10'" },
-  { num: 8,  date: "2026-05-29", type: "C",        title: "POST-T2 + 1. sesja mleczanowa",                min: 90, phase: "II",    levelMini: "Doskonalenie", levelMlodzik: "Opanowanie",   desc: "Debrief T2 10', praca mleczanowa interwałowa 40', elementy taktyczne 25', cooldown 15'" },
-  { num: 9,  date: "2026-06-01", type: "A",        title: "Sytuacje stałe — faceoff, rzut karny",         min: 90, phase: "II",    levelMini: "Doskonalenie", levelMlodzik: "Opanowanie",   desc: "Rozgrzewka 10', faceoff technika i taktyka 25', rzut karny 20', sytuacje specjalne 20', gra 15'" },
-  { num: 10, date: "2026-06-05", type: "★PRE-T3",  title: "Screen + forma (Boże Ciało 04.06)",            min: 90, phase: "II",    levelMini: "Forma",        levelMlodzik: "Forma",        desc: "Rozgrzewka 10', screen i zasłony 25', mini-mecze formowe 45', stretching 10'" },
-  { num: 11, date: "2026-06-08", type: "B",        title: "POST-T3 + rotacja napastników + aerob 30 min", min: 90, phase: "II→III",levelMini: "Doskonalenie", levelMlodzik: "Opanowanie",   desc: "Debrief T3 10', rotacja linii napastników 25', BLOK AEROBOWY 30 min (test mowy), cooldown 25'" },
-  { num: 12, date: "2026-06-12", type: "B",        title: "Testy postępu T1-T6 (vs 13.04.2026)",          min: 90, phase: "II→III",levelMini: "Pomiar",       levelMlodzik: "Pomiar",       desc: "TESTY SPRAWNOŚCIOWE T1-T6: T1-Czas jazdy, T2-Crossovers, T3-Strzały, T4-Slalom, T5-Reakcja, T6-Wytrzymałość. Porównanie z 13.04.2026" },
-  { num: 13, date: "2026-06-15", type: "C",        title: "Start Fazy III — szybkość + eksplozywność",    min: 90, phase: "III",   levelMini: "Doskonalenie", levelMlodzik: "Opanowanie",   desc: "Rozgrzewka 15', sprinty i eksplozywność 30', praca mleczanowa interwałowa 30', cooldown 15'" },
-  { num: 14, date: "2026-06-19", type: "C",        title: "Max intensywność — szczyt sezonu",             min: 90, phase: "III",   levelMini: "Doskonalenie", levelMlodzik: "Opanowanie",   desc: "Rozgrzewka 15', max intensywność — interwały krótkie 40', gra w wysokim tempie 25', cooldown 10'" },
-  { num: 15, date: "2026-06-22", type: "★PRE-T4",  title: "Symulacja dnia HLH — 3 mecze",                 min: 90, phase: "III",   levelMini: "Forma",        levelMlodzik: "Forma",        desc: "Symulacja całego dnia turniejowego: 3 mecze 20' z przerwami 15', odprawy między meczami, briefing końcowy" },
-  { num: 16, date: "2026-06-26", type: "A",        title: "Ostatni trening + wręczenie dyplomów",         min: 60, phase: "III",   levelMini: "Zakończenie",  levelMlodzik: "Zakończenie",  desc: "Rozgrzewka 10', gra swobodna 20', ceremonia wręczenia dyplomów i podziękowań 30'" },
-  { num: 17, date: "2026-06-29", type: "A",        title: "Gra swobodna + zadania domowe na lipiec",      min: 60, phase: "III",   levelMini: "Zakończenie",  levelMlodzik: "Zakończenie",  desc: "Gra swobodna 30', podsumowanie sezonu 10', wydanie kart zadań domowych na lipiec 20'" },
-];
+Naprawiam endpoint — dodaję wyszukanie grupy po nazwie i ustawienie `groupId`:Gotowe. Co zmieniłem:
+- Dodałem wyszukiwanie `TrainingGroup` po nazwie (`Mini Hokej`, `Młodzik`)
+- Ustawiłem `groupId` na podplanie (kluczowe dla Dziennika PZSW)
+- W odpowiedzi seeda zobaczysz dokładnie jaką grupę znalazł (kategorię, id) — to potwierdzi czy wszystko się spina
 
-const GROUPS = [
-  {
-    label:          "Mini Hokej",
-    childPlanName:  "Mini Hokej — Plan Letni 2026 (06.05–30.06)",
-    childPlanDesc:  "Plan letni rolkowy maj–czerwiec 2026. 16 sesji wg metodologii SWH (Pn+Cz, 18:30–20:00). Faza I→II→III, 4 turnieje HLH (T1–T4). Źródło: SWH_Plan_Letni_2026.",
-    parentNameLike: "Program roczny Mini Hokej",
-    category:       "U10",
-    hour:           18,
-    minute:         30,
-    levelKey:       "levelMini" as const,
-  },
-  {
-    label:          "Młodzik",
-    childPlanName:  "Młodzik — Plan Letni 2026 (06.05–30.06)",
-    childPlanDesc:  "Plan letni rolkowy maj–czerwiec 2026. 16 sesji wg metodologii SWH (Pn+Cz, 19:30–21:00). Faza I→II→III, 4 turnieje HLH (T1–T4). Building the Engine.",
-    parentNameLike: "Program roczny Młodzik",
-    category:       "U14",
-    hour:           19,
-    minute:         30,
-    levelKey:       "levelMlodzik" as const,
-  },
-];
+**Zaktualizuj endpoint na GitHubie:**
 
-function buildDate(isoDate: string, hour: number, minute: number): Date {
-  const hh = String(hour).padStart(2, "0");
-  const mm = String(minute).padStart(2, "0");
-  return new Date(`${isoDate}T${hh}:${mm}:00`);
-}
+1. Pobierz nowy `route.ts` (z linku powyżej)
+2. Wejdź w istniejący plik na GitHubie:  
+   `https://github.com/Wojtekom/swh-manager/blob/master/src/app/api/seed-letni/route.ts`
+3. Kliknij **ikonę ołówka ✏️** "Edit this file"
+4. **Ctrl+A → Delete** (skasuj całą zawartość)
+5. **Otwórz** mojego nowego `route` w nowej karcie, **Ctrl+A, Ctrl+C**, wróć do edytora GitHub i **Ctrl+V**
+6. Przewiń w dół → **"Commit changes"** → wiadomość: `Fix: dodaj groupId do podplanów żeby Dziennik PZSW je zobaczył`
+7. **Commit changes**
 
-export async function GET(request: Request) {
-  const url = new URL(request.url);
-  if (url.searchParams.get("key") !== "letni2026") {
-    return NextResponse.json({ error: "Unauthorized — wymagany ?key=letni2026" }, { status: 401 });
-  }
+Po deploy Vercel (~2 min) — odpalimy ponownie:
+```
+https://swh-manager.vercel.app/api/seed-letni?key=letni2026
+```
+Tym razem w odpowiedzi zobaczysz `Grupa: Mini Hokej (kategoria: U12, id=...)` co potwierdzi powiązanie. Potem odśwież Dziennik PZSW — sesje powinny się pojawić.
 
-  try {
-    const results: string[] = [];
-
-    const admin = await prisma.user.findFirst({ where: { role: "ADMIN" } });
-    if (!admin) {
-      return NextResponse.json({ error: "Brak użytkownika ADMIN w bazie." }, { status: 500 });
-    }
-
-    for (const group of GROUPS) {
-      const log: string[] = [];
-      log.push(`▶ ${group.label}`);
-
-      const parentPlan = await prisma.trainingPlan.findFirst({
-        where: { name: { contains: group.parentNameLike } },
-      });
-
-      if (!parentPlan) {
-        log.push(`  ⚠ Nie znaleziono planu rocznego "${group.parentNameLike}" — pominięto.`);
-        results.push(log.join("\n"));
-        continue;
-      }
-
-      log.push(`  Plan roczny (parent): ${parentPlan.name}`);
-
-      const existingChild = await prisma.trainingPlan.findFirst({
-        where: { name: group.childPlanName },
-      });
-
-      if (existingChild) {
-        await prisma.trainingSession.deleteMany({ where: { planId: existingChild.id } });
-        await prisma.trainingPlan.delete({ where: { id: existingChild.id } });
-        log.push(`  ⤳ Usunięto istniejący podplan i jego sesje.`);
-      }
-
-      const childPlan = await prisma.trainingPlan.create({
-        data: {
-          name:           group.childPlanName,
-          description:    group.childPlanDesc,
-          category:       group.category as any,
-          planType:       "WEEKLY" as any,
-          parentPlanId:   parentPlan.id,
-          season:         "letni-2026-mini-mlodzik",
-          periodStart:    new Date("2026-05-06"),
-          periodEnd:      new Date("2026-06-30"),
-          totalSessions:  SESSIONS.length,
-          totalDuration:  SESSIONS.reduce((sum, s) => sum + s.min, 0),
-          createdById:    admin.id,
-        },
-      });
-
-      log.push(`  ✓ Utworzono podplan: ${childPlan.name}`);
-
-      let order = 1;
-      for (const s of SESSIONS) {
-        const date = buildDate(s.date, group.hour, group.minute);
-        const level = s[group.levelKey];
-        const title = `Sesja ${s.num} — ${s.title}`;
-        const objectives = `Faza ${s.phase} · Typ ${s.type} · ${group.label}: ${level}`;
-
-        await prisma.trainingSession.create({
-          data: {
-            planId:     childPlan.id,
-            title:      title,
-            date:       date,
-            duration:   s.min,
-            objectives: objectives,
-            notes:      s.desc,
-            order:      order,
-          },
-        });
-        order++;
-      }
-
-      log.push(`  ✓ Wstawiono ${SESSIONS.length} sesji (${SESSIONS.reduce((sum, s) => sum + s.min, 0)} min łącznie)`);
-      results.push(log.join("\n"));
-    }
-
-    return NextResponse.json({ ok: true, results });
-  } catch (err) {
-    console.error("Seed letni error:", err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
-  }
-}
+Napisz "wgrane" gdy gotowe.
