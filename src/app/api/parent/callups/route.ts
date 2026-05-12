@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   const includePast = searchParams.get("includePast") === "1";
 
   // Znajdź zawodników, których rodzicem jest aktualnie zalogowany user
-  const parentLinks = await prisma.playerParent.findMany({
+  const parentLinks = await prisma.parentPlayer.findMany({
     where: { parentId: userId },
     select: { playerId: true },
   });
