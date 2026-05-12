@@ -45,7 +45,7 @@ export async function GET(
           jerseyNum: true,
           category: true,
           parents: {
-            include: {
+            select: {
               parent: { select: { name: true, email: true } },
             },
           },
