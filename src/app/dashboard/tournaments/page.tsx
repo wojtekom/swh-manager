@@ -50,7 +50,12 @@ interface Tournament {
   description: string | null;
   status: string;
   group: { id: string; name: string } | null;
+  groupId: string | null;
   createdBy: { id: string; name: string };
+  transportFee: number | null;
+  meetingTime: string | null;
+  meetingLocation: string | null;
+  parentDeadline: string | null;
   _count: { matches: number; callups: number };
 }
 
@@ -67,6 +72,7 @@ interface TournamentMatch {
 interface Callup {
   id: string;
   status: string;
+  transportChoice: string;
   notes: string | null;
   respondedAt: string | null;
   player: {
@@ -106,6 +112,13 @@ const CALLUP_STATUS: Record<string, { label: string; icon: typeof UserCheck; col
   CONFIRMED: { label: "Potwierdził", icon: UserCheck, color: "text-green-600" },
   DECLINED: { label: "Odmówił", icon: UserX, color: "text-red-600" },
   INJURED: { label: "Kontuzja", icon: AlertTriangle, color: "text-orange-600" },
+};
+
+const TRANSPORT_LABELS: Record<string, { label: string; emoji: string; color: string }> = {
+  UNDECIDED: { label: "Oczekuje", emoji: "❓", color: "bg-slate-100 text-slate-600" },
+  BUS: { label: "Autokar", emoji: "🚌", color: "bg-blue-100 text-blue-700" },
+  OWN: { label: "Własny", emoji: "🚗", color: "bg-amber-100 text-amber-700" },
+  NONE: { label: "Nie jedzie", emoji: "✖", color: "bg-red-100 text-red-700" },
 };
 
 const CATEGORIES = ["U8", "U10", "U12", "U14", "U16", "U18", "SENIOR"];
@@ -168,11 +181,16 @@ export default function TournamentsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 -mx-4 sm:-mx-6 -my-4 sm:-my-6 px-4 sm:px-6 py-4 sm:py-6 bg-ice min-h-screen">
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Turnieje</h1>
-          <p className="text-muted-foreground">{tournaments.length} turniejów</p>
+        <div className="flex items-center gap-3">
+          <div className="icon-section icon-section-trophy">
+            <Trophy className="h-4 w-4" />
+          </div>
+          <div>
+            <h1 className="font-display text-3xl sm:text-4xl font-bold text-slate-900 leading-tight">Turnieje</h1>
+            <p className="text-sm text-slate-600">{tournaments.length} turniejów</p>
+          </div>
         </div>
         <div className="flex gap-2 flex-wrap">
           <Select value={filterCategory} onValueChange={(v) => v && setFilterCategory(v)}>
@@ -206,73 +224,72 @@ export default function TournamentsPage() {
       </div>
 
       {loading ? (
-        <p className="text-center text-muted-foreground py-8">Ładowanie...</p>
+        <p className="text-center text-slate-500 py-8">Ładowanie...</p>
       ) : filtered.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Trophy className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">Brak turniejów.</p>
-          </CardContent>
-        </Card>
+        <div className="card-rink rounded-2xl py-12 text-center">
+          <Trophy className="h-12 w-12 text-sky-300 mx-auto mb-4" />
+          <p className="text-slate-600">Brak turniejów.</p>
+        </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {filtered.map((t) => {
             const statusInfo = STATUS_MAP[t.status] || STATUS_MAP.PLANNED;
             return (
-              <Card key={t.id} className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <Badge variant="outline">{t.category}</Badge>
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusInfo.color}`}>
-                          {statusInfo.label}
-                        </span>
-                      </div>
-                      <CardTitle className="text-lg">{t.name}</CardTitle>
+              <div key={t.id} className="card-rink rounded-2xl p-5">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      <span className="text-xs font-bold text-slate-500 bg-white px-2 py-0.5 rounded-md border border-slate-200">
+                        {t.category}
+                      </span>
+                      <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${statusInfo.color}`}>
+                        {statusInfo.label}
+                      </span>
                     </div>
-                    {isAdminOrCoach && (
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(t.id)}>
-                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                      </Button>
-                    )}
+                    <h3 className="font-display text-lg font-bold text-slate-900 leading-tight">{t.name}</h3>
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-3.5 w-3.5" /> {t.location}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3.5 w-3.5" />
-                      {new Date(t.startDate).toLocaleDateString("pl-PL", { day: "numeric", month: "short" })}
-                      {t.endDate && ` – ${new Date(t.endDate).toLocaleDateString("pl-PL", { day: "numeric", month: "short" })}`}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-4 text-sm">
-                    <span className="flex items-center gap-1">
-                      <Swords className="h-3.5 w-3.5 text-muted-foreground" />
-                      {t._count.matches} {t._count.matches === 1 ? "mecz" : "meczy"}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                      {t._count.callups} powołanych
-                    </span>
-                  </div>
-
                   {isAdminOrCoach && (
-                    <div className="flex items-center gap-2 pt-1">
-                      <Select
-                        value={t.status}
-                        onValueChange={(v) => v && handleStatusChange(t.id, v)}
-                      >
-                        <SelectTrigger className="h-8 text-xs w-[140px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(STATUS_MAP).map(([k, v]) => (
-                            <SelectItem key={k} value={k}>{v.label}</SelectItem>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(t.id)}>
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    </Button>
+                  )}
+                </div>
+                <div className="space-y-1.5 text-sm text-slate-700 mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">📍</span>
+                    <span>{t.location}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">📅</span>
+                    <span>
+                      {new Date(t.startDate).toLocaleDateString("pl-PL", { day: "numeric", month: "long" })}
+                      {t.endDate && ` – ${new Date(t.endDate).toLocaleDateString("pl-PL", { day: "numeric", month: "long" })}`}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm pt-1">
+                    <span className="flex items-center gap-1.5">
+                      <Swords className="h-3.5 w-3.5 text-slate-500" />
+                      <strong>{t._count.matches}</strong> {t._count.matches === 1 ? "mecz" : "meczy"}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <Users className="h-3.5 w-3.5 text-slate-500" />
+                      <strong>{t._count.callups}</strong> powołanych
+                    </span>
+                  </div>
+                </div>
+
+                {isAdminOrCoach && (
+                  <div className="flex items-center gap-2 pt-1">
+                    <Select
+                      value={t.status}
+                      onValueChange={(v) => v && handleStatusChange(t.id, v)}
+                    >
+                      <SelectTrigger className="h-8 text-xs w-[140px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(STATUS_MAP).map(([k, v]) => (
+                          <SelectItem key={k} value={k}>{v.label}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -296,8 +313,7 @@ export default function TournamentsPage() {
                       Szczegóły <ChevronRight className="h-3.5 w-3.5 ml-1" />
                     </Button>
                   )}
-                </CardContent>
-              </Card>
+              </div>
             );
           })}
         </div>
@@ -485,11 +501,46 @@ function TournamentDetailDialog({
       body: JSON.stringify({ playerIds: selectedPlayers }),
     });
     if (res.ok) {
-      toast.success("Powołania dodane");
+      const data = await res.json();
+      toast.success(`Powołano ${data.created} zawodników${data.skipped ? ` (pominięto ${data.skipped} już powołanych)` : ""}. Powiadomienia rozesłane.`);
       setSelectedPlayers([]);
       setAddingCallups(false);
       fetchTournament();
       onUpdated();
+    } else {
+      toast.error("Błąd przy dodawaniu powołań");
+    }
+  }
+
+  async function callupWholeGroup() {
+    if (!tournament?.groupId) return;
+    const res = await fetch(`/api/tournaments/${tournamentId}/callups`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ groupId: tournament.groupId }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      toast.success(`Powołano ${data.created} zawodników z grupy. ${data.skipped ? `(pominięto ${data.skipped} już powołanych)` : ""}`);
+      fetchTournament();
+      onUpdated();
+    } else {
+      toast.error("Błąd przy powoływaniu grupy");
+    }
+  }
+
+  async function saveTournamentDetails(updates: Partial<Tournament>) {
+    const res = await fetch(`/api/tournaments/${tournamentId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
+    });
+    if (res.ok) {
+      toast.success("Zapisano");
+      fetchTournament();
+      onUpdated();
+    } else {
+      toast.error("Błąd zapisu");
     }
   }
 
@@ -547,6 +598,14 @@ function TournamentDetailDialog({
 
         {tournament.description && (
           <p className="text-sm text-muted-foreground mb-4">{tournament.description}</p>
+        )}
+
+        {/* Detale wyjazdu — edytowalne dla admina/trenera */}
+        {isAdminOrCoach && (
+          <TournamentLogistics
+            tournament={tournament}
+            onSave={saveTournamentDetails}
+          />
         )}
 
         {/* Tabs */}
@@ -675,6 +734,7 @@ function TournamentDetailDialog({
               <div className="space-y-2">
                 {tournament.callups.map((c) => {
                   const st = CALLUP_STATUS[c.status] || CALLUP_STATUS.CALLED;
+                  const tr = TRANSPORT_LABELS[c.transportChoice] || TRANSPORT_LABELS.UNDECIDED;
                   const Icon = st.icon;
                   return (
                     <div key={c.id} className="flex items-center gap-3 p-2.5 border rounded-lg">
@@ -683,8 +743,14 @@ function TournamentDetailDialog({
                           {c.player.jerseyNum && <span className="text-muted-foreground mr-1">#{c.player.jerseyNum}</span>}
                           {c.player.firstName} {c.player.lastName}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground flex items-center gap-2">
                           {c.player.position || "Brak pozycji"}
+                          {c.transportChoice !== "UNDECIDED" && (
+                            <span className={cn("inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium", tr.color)}>
+                              {tr.emoji} {tr.label}
+                            </span>
+                          )}
+                          {c.notes && <span className="italic text-muted-foreground/70">„{c.notes}"</span>}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -730,9 +796,16 @@ function TournamentDetailDialog({
             )}
 
             {isAdminOrCoach && !addingCallups && (
-              <Button size="sm" variant="outline" onClick={() => setAddingCallups(true)}>
-                <Plus className="h-3.5 w-3.5 mr-1" /> Dodaj powołania
-              </Button>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => setAddingCallups(true)}>
+                  <Plus className="h-3.5 w-3.5 mr-1" /> Dodaj powołania
+                </Button>
+                {tournament.groupId && (
+                  <Button size="sm" variant="outline" onClick={callupWholeGroup}>
+                    <Users className="h-3.5 w-3.5 mr-1" /> Powołaj całą grupę
+                  </Button>
+                )}
+              </div>
             )}
 
             {isAdminOrCoach && addingCallups && (
@@ -777,5 +850,100 @@ function TournamentDetailDialog({
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ============ Komponent: Detale logistyczne wyjazdu (opłata, zbiórka, deadline) ============
+function TournamentLogistics({
+  tournament,
+  onSave,
+}: {
+  tournament: Tournament;
+  onSave: (updates: Partial<Tournament>) => Promise<void>;
+}) {
+  const [transportFee, setTransportFee] = useState<string>(
+    tournament.transportFee?.toString() ?? ""
+  );
+  const [meetingTime, setMeetingTime] = useState<string>(
+    tournament.meetingTime ? tournament.meetingTime.slice(0, 16) : ""
+  );
+  const [meetingLocation, setMeetingLocation] = useState<string>(
+    tournament.meetingLocation ?? ""
+  );
+  const [parentDeadline, setParentDeadline] = useState<string>(
+    tournament.parentDeadline ? tournament.parentDeadline.slice(0, 16) : ""
+  );
+  const [saving, setSaving] = useState(false);
+
+  const dirty =
+    transportFee !== (tournament.transportFee?.toString() ?? "") ||
+    meetingTime !== (tournament.meetingTime?.slice(0, 16) ?? "") ||
+    meetingLocation !== (tournament.meetingLocation ?? "") ||
+    parentDeadline !== (tournament.parentDeadline?.slice(0, 16) ?? "");
+
+  async function handleSave() {
+    setSaving(true);
+    await onSave({
+      transportFee: transportFee ? parseFloat(transportFee) : null,
+      meetingTime: meetingTime ? new Date(meetingTime).toISOString() : null,
+      meetingLocation: meetingLocation || null,
+      parentDeadline: parentDeadline ? new Date(parentDeadline).toISOString() : null,
+    } as Partial<Tournament>);
+    setSaving(false);
+  }
+
+  return (
+    <div className="border rounded-lg p-3 mb-4 bg-slate-50/50">
+      <p className="text-xs font-semibold text-muted-foreground mb-2">DETALE WYJAZDU (dla rodziców)</p>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="text-xs">Opłata transportowa (zł)</Label>
+          <Input
+            type="number"
+            min="0"
+            step="10"
+            placeholder="np. 150 (puste = brak autokaru)"
+            value={transportFee}
+            onChange={(e) => setTransportFee(e.target.value)}
+            className="h-8 text-sm"
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Deadline odpowiedzi rodziców</Label>
+          <Input
+            type="datetime-local"
+            value={parentDeadline}
+            onChange={(e) => setParentDeadline(e.target.value)}
+            className="h-8 text-sm"
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Godzina zbiórki</Label>
+          <Input
+            type="datetime-local"
+            value={meetingTime}
+            onChange={(e) => setMeetingTime(e.target.value)}
+            className="h-8 text-sm"
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Miejsce zbiórki</Label>
+          <Input
+            type="text"
+            placeholder="np. Parking Nowe Kino"
+            value={meetingLocation}
+            onChange={(e) => setMeetingLocation(e.target.value)}
+            className="h-8 text-sm"
+          />
+        </div>
+      </div>
+      {dirty && (
+        <div className="flex justify-end mt-2">
+          <Button size="sm" onClick={handleSave} disabled={saving}>
+            {saving ? "Zapisywanie..." : "Zapisz detale"}
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }

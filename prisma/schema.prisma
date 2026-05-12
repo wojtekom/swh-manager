@@ -452,19 +452,30 @@ enum CallupStatus {
   INJURED    // kontuzjowany
 }
 
+enum TransportChoice {
+  UNDECIDED  // rodzic nie odpowiedział
+  BUS        // autokar SWH
+  OWN        // własny transport
+  NONE       // nie jedzie (gdy DECLINED)
+}
+
 model Tournament {
-  id          String           @id @default(cuid())
-  name        String
-  location    String
-  startDate   DateTime
-  endDate     DateTime?
-  category    AgeCategory
-  description String?
-  status      TournamentStatus @default(PLANNED)
-  groupId     String?          // powiązana grupa treningowa
-  createdById String
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  id              String           @id @default(cuid())
+  name            String
+  location        String
+  startDate       DateTime
+  endDate         DateTime?
+  category        AgeCategory
+  description     String?
+  status          TournamentStatus @default(PLANNED)
+  groupId         String?          // powiązana grupa treningowa
+  transportFee    Float?           // opłata transportowa (np. 150 zł autokar); null = brak autokaru
+  meetingTime     DateTime?        // godzina zbiórki przed wyjazdem
+  meetingLocation String?          // miejsce zbiórki (np. "Parking Nowe Kino")
+  parentDeadline  DateTime?        // termin odpowiedzi rodziców
+  createdById     String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   group     TrainingGroup?    @relation(fields: [groupId], references: [id], onDelete: SetNull)
   createdBy User              @relation(fields: [createdById], references: [id])
@@ -491,13 +502,15 @@ model TournamentMatch {
 }
 
 model Callup {
-  id           String       @id @default(cuid())
-  tournamentId String
-  playerId     String
-  status       CallupStatus @default(CALLED)
-  notes        String?
-  respondedAt  DateTime?
-  createdAt    DateTime     @default(now())
+  id              String           @id @default(cuid())
+  tournamentId    String
+  playerId        String
+  status          CallupStatus     @default(CALLED)
+  transportChoice TransportChoice  @default(UNDECIDED)
+  notes           String?
+  notifiedAt      DateTime?        // kiedy wysłano powiadomienie rodzicowi
+  respondedAt     DateTime?
+  createdAt       DateTime         @default(now())
 
   tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   player     Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
