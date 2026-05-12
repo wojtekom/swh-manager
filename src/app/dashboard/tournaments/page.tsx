@@ -37,6 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { getCategoryLabel, ALL_CATEGORIES } from "@/lib/category-labels";
 
 interface Tournament {
   id: string;
@@ -119,7 +120,7 @@ const TRANSPORT_LABELS: Record<string, { label: string; emoji: string; color: st
   NONE: { label: "Nie jedzie", emoji: "✖", color: "bg-red-100 text-red-700" },
 };
 
-const CATEGORIES = ["U8", "U10", "U12", "U14", "U16", "U18", "SENIOR"];
+// CATEGORIES — używamy ALL_CATEGORIES z @/lib/category-labels
 
 export default function TournamentsPage() {
   const { data: session, status: authStatus } = useSession();
@@ -197,8 +198,8 @@ export default function TournamentsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">Wszystkie</SelectItem>
-              {CATEGORIES.map((c) => (
-                <SelectItem key={c} value={c}>{c}</SelectItem>
+              {ALL_CATEGORIES.map((c) => (
+                <SelectItem key={c} value={c}>{getCategoryLabel(c, true)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -237,8 +238,8 @@ export default function TournamentsPage() {
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <span className="text-xs font-bold text-slate-500 bg-white px-2 py-0.5 rounded-md border border-slate-200">
-                        {t.category}
+                      <span className="text-xs font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200">
+                        {getCategoryLabel(t.category)}
                       </span>
                       <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${statusInfo.color}`}>
                         {statusInfo.label}
@@ -407,8 +408,8 @@ function CreateTournamentDialog({
               <Select value={form.category} onValueChange={(v) => v && setForm({ ...form, category: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {CATEGORIES.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  {ALL_CATEGORIES.map((c) => (
+                    <SelectItem key={c} value={c}>{getCategoryLabel(c, true)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -581,7 +582,7 @@ function TournamentDetailDialog({
           <DialogTitle className="flex items-center gap-2">
             <Trophy className="h-5 w-5" />
             {tournament.name}
-            <Badge variant="outline" className="ml-1">{tournament.category}</Badge>
+            <Badge variant="outline" className="ml-1">{getCategoryLabel(tournament.category)}</Badge>
           </DialogTitle>
         </DialogHeader>
 
@@ -810,7 +811,7 @@ function TournamentDetailDialog({
 
             {isAdminOrCoach && addingCallups && (
               <div className="border-t pt-4 space-y-3">
-                <p className="text-sm font-medium">Powołaj zawodników ({tournament.category})</p>
+                <p className="text-sm font-medium">Powołaj zawodników ({getCategoryLabel(tournament.category)})</p>
                 {availablePlayers.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Brak dostępnych zawodników w tej kategorii</p>
                 ) : (

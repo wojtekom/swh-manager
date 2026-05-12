@@ -16,6 +16,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { formatPLN } from "@/lib/camp-signup-helpers";
+import { getCategoryLabel } from "@/lib/category-labels";
 
 interface Camp {
   id: string;
@@ -231,8 +232,8 @@ function CallupCard({ callup }: { callup: ParentCallup }) {
     <div className={`${cardClass} rounded-2xl p-5 relative`}>
       <div className="flex items-start justify-between mb-3 gap-2">
         {statusBadge}
-        <span className="text-xs font-bold text-slate-500 bg-white px-2 py-0.5 rounded-md border border-slate-200">
-          {callup.player.category}
+        <span className="text-xs font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200">
+          {getCategoryLabel(callup.player.category)}
         </span>
       </div>
 
@@ -342,8 +343,8 @@ function CampCard({ camp }: { camp: Camp }) {
           )}
         </span>
         {camp.category && (
-          <span className="text-xs font-bold text-slate-500 bg-white px-2 py-0.5 rounded-md border border-slate-200">
-            {camp.category}
+          <span className="text-xs font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200">
+            {getCategoryLabel(camp.category)}
           </span>
         )}
       </div>

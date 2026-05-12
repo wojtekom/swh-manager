@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { formatPLN } from "@/lib/camp-signup-helpers";
+import { getCategoryLabel } from "@/lib/category-labels";
 
 interface CallupDetail {
   id: string;
@@ -176,7 +177,7 @@ export default function CallupRespondPage() {
                   <Trophy className="h-3.5 w-3.5" /> POWOŁANIE NA TURNIEJ
                 </span>
                 <span className="inline-flex items-center px-2 py-1 rounded-md bg-white/20 text-white text-xs font-bold">
-                  {callup.player.category}
+                  {getCategoryLabel(callup.player.category)}
                 </span>
               </div>
               <h2 className="font-display text-2xl sm:text-3xl font-bold text-white mb-1">
