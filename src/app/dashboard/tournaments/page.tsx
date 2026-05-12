@@ -457,6 +457,7 @@ function TournamentDetailDialog({
   const [matchForm, setMatchForm] = useState({ opponent: "", isHome: true, matchDate: "", notes: "" });
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [addingCallups, setAddingCallups] = useState(false);
+  const [playerSearch, setPlayerSearch] = useState("");
 
   const fetchTournament = useCallback(async () => {
     const res = await fetch(`/api/tournaments/${tournamentId}`);
@@ -571,9 +572,24 @@ function TournamentDetailDialog({
   }
 
   const calledPlayerIds = tournament.callups.map((c) => c.player.id);
-  const availablePlayers = players.filter(
-    (p) => !calledPlayerIds.includes(p.id) && p.category === tournament.category
-  );
+  const availablePlayers = players
+    .filter((p) => !calledPlayerIds.includes(p.id))
+    .filter((p) => {
+      if (!playerSearch.trim()) return true;
+      const q = playerSearch.toLowerCase();
+      return (
+        p.firstName.toLowerCase().includes(q) ||
+        p.lastName.toLowerCase().includes(q) ||
+        `${p.firstName} ${p.lastName}`.toLowerCase().includes(q)
+      );
+    })
+    .sort((a, b) => {
+      // Najpierw zawodnicy z kategorii turnieju, potem reszta
+      const aMatch = a.category === tournament.category ? 0 : 1;
+      const bMatch = b.category === tournament.category ? 0 : 1;
+      if (aMatch !== bMatch) return aMatch - bMatch;
+      return a.lastName.localeCompare(b.lastName, "pl");
+    });
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -811,37 +827,94 @@ function TournamentDetailDialog({
 
             {isAdminOrCoach && addingCallups && (
               <div className="border-t pt-4 space-y-3">
-                <p className="text-sm font-medium">Powołaj zawodników ({getCategoryLabel(tournament.category)})</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium">
+                    Powołaj zawodników
+                    <span className="text-xs text-muted-foreground ml-2 font-normal">
+                      (turniej: {getCategoryLabel(tournament.category)})
+                    </span>
+                  </p>
+                  {selectedPlayers.length > 0 && (
+                    <span className="text-xs font-semibold text-sky-700">
+                      Zaznaczonych: {selectedPlayers.length}
+                    </span>
+                  )}
+                </div>
+                <Input
+                  placeholder="🔍 Szukaj zawodnika po imieniu lub nazwisku..."
+                  value={playerSearch}
+                  onChange={(e) => setPlayerSearch(e.target.value)}
+                  className="h-9 text-sm"
+                />
                 {availablePlayers.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Brak dostępnych zawodników w tej kategorii</p>
+                  <p className="text-sm text-muted-foreground">
+                    {playerSearch.trim()
+                      ? "Brak zawodników pasujących do wyszukiwania"
+                      : "Wszyscy zawodnicy są już powołani"}
+                  </p>
                 ) : (
-                  <div className="max-h-48 overflow-y-auto space-y-1 border rounded-lg p-1">
-                    {availablePlayers.map((p) => (
-                      <label key={p.id} className="flex items-center gap-2 px-3 py-1.5 hover:bg-accent rounded-md cursor-pointer text-sm">
-                        <input
-                          type="checkbox"
-                          checked={selectedPlayers.includes(p.id)}
-                          onChange={(e) =>
-                            setSelectedPlayers((prev) =>
-                              e.target.checked
-                                ? [...prev, p.id]
-                                : prev.filter((x) => x !== p.id)
-                            )
-                          }
-                          className="h-4 w-4"
-                        />
-                        {p.jerseyNum && <span className="text-muted-foreground">#{p.jerseyNum}</span>}
-                        {p.firstName} {p.lastName}
-                        {p.position && <span className="text-xs text-muted-foreground ml-auto">{p.position}</span>}
-                      </label>
-                    ))}
+                  <div className="max-h-64 overflow-y-auto space-y-1 border rounded-lg p-1">
+                    {availablePlayers.map((p) => {
+                      const isMainCategory = p.category === tournament.category;
+                      return (
+                        <label
+                          key={p.id}
+                          className={cn(
+                            "flex items-center gap-2 px-3 py-1.5 hover:bg-accent rounded-md cursor-pointer text-sm",
+                            !isMainCategory && "opacity-90"
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedPlayers.includes(p.id)}
+                            onChange={(e) =>
+                              setSelectedPlayers((prev) =>
+                                e.target.checked
+                                  ? [...prev, p.id]
+                                  : prev.filter((x) => x !== p.id)
+                              )
+                            }
+                            className="h-4 w-4"
+                          />
+                          {p.jerseyNum && (
+                            <span className="text-muted-foreground">#{p.jerseyNum}</span>
+                          )}
+                          <span className="font-medium">{p.firstName} {p.lastName}</span>
+                          <span
+                            className={cn(
+                              "text-[10px] font-bold px-1.5 py-0.5 rounded ml-auto",
+                              isMainCategory
+                                ? "bg-sky-100 text-sky-700"
+                                : "bg-amber-100 text-amber-800"
+                            )}
+                          >
+                            {getCategoryLabel(p.category)}
+                          </span>
+                          {p.position && (
+                            <span className="text-xs text-muted-foreground">{p.position}</span>
+                          )}
+                        </label>
+                      );
+                    })}
                   </div>
                 )}
                 <div className="flex gap-2 justify-end">
-                  <Button size="sm" variant="outline" onClick={() => { setAddingCallups(false); setSelectedPlayers([]); }}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setAddingCallups(false);
+                      setSelectedPlayers([]);
+                      setPlayerSearch("");
+                    }}
+                  >
                     Anuluj
                   </Button>
-                  <Button size="sm" onClick={addCallups} disabled={selectedPlayers.length === 0}>
+                  <Button
+                    size="sm"
+                    onClick={addCallups}
+                    disabled={selectedPlayers.length === 0}
+                  >
                     Powołaj ({selectedPlayers.length})
                   </Button>
                 </div>
