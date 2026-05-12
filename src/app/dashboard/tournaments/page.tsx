@@ -15,7 +15,6 @@ import {
   Swords,
   UserCheck,
   UserX,
-  HelpCircle,
   AlertTriangle,
   X,
 } from "lucide-react";
@@ -24,7 +23,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -352,6 +350,7 @@ function CreateTournamentDialog({
   });
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (open) setForm({ name: "", location: "", startDate: "", endDate: "", category: "U12", description: "", groupId: "" });
   }, [open]);
 
@@ -464,6 +463,7 @@ function TournamentDetailDialog({
   }, [tournamentId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTournament();
     fetch("/api/players").then((r) => r.json()).then(setPlayers).catch(() => {});
   }, [fetchTournament]);
@@ -750,7 +750,7 @@ function TournamentDetailDialog({
                               {tr.emoji} {tr.label}
                             </span>
                           )}
-                          {c.notes && <span className="italic text-muted-foreground/70">„{c.notes}"</span>}
+                          {c.notes && <span className="italic text-muted-foreground/70">{`„${c.notes}"`}</span>}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">

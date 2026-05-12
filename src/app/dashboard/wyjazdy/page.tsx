@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import {
   Trophy,
   Tent,
-  MapPin,
   Calendar,
   Users,
   ChevronRight,
@@ -16,7 +15,6 @@ import {
   CheckCircle2,
   XCircle,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { formatPLN } from "@/lib/camp-signup-helpers";
 
 interface Camp {
