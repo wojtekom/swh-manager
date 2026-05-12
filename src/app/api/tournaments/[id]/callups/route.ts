@@ -88,7 +88,7 @@ export async function POST(
   let playerIds = parsed.data.playerIds || [];
   if (parsed.data.groupId) {
     const members = await prisma.groupMember.findMany({
-      where: { groupId: parsed.data.groupId, active: true },
+      where: { groupId: parsed.data.groupId },
       select: { playerId: true },
     });
     const groupPlayerIds = members.map((m: { playerId: string }) => m.playerId);
