@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -142,10 +142,24 @@ function toSwhCategory(item: {
 }
 
 // ============================================================
-// MAIN
+// MAIN (wrapped in Suspense — useSearchParams wymaga tego w Next.js 16)
 // ============================================================
 
 export default function DziennikPZSWPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[60vh] text-slate-400">
+          Ładowanie dziennika...
+        </div>
+      }
+    >
+      <DziennikPZSWContent />
+    </Suspense>
+  );
+}
+
+function DziennikPZSWContent() {
   const searchParams = useSearchParams();
   const urlGroup = searchParams.get("group");
   const urlSession = searchParams.get("session");
