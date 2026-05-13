@@ -3,27 +3,8 @@ import { PrismaClient, PlanType, SwhCategory, AgeCategory } from "@prisma/client
 
 const prisma = new PrismaClient();
 
-// ====================================================================
-// SEED PLANS 2026 v2 — z fallbackiem matchowania grup
-// Lokalizacja: src/app/api/admin/seed-plans-2026/route.ts
-//
-// Co robi:
-// 1. Dopasowuje grupy po swhCategory ALBO nazwie/kategorii wiekowej
-// 2. Auto-uzupelnia swhCategory na grupach gdy brak
-// 3. Aktualizuje Schedule grup (godziny pon+czw)
-// 4. Tworzy hierarchie: 3 roczne -> 3 sezonowe -> 69 tygodniowych -> 138 sesji
-//
-// Uzycie:
-//   GET  /api/admin/seed-plans-2026?key=seed-2026-05-13   → dry run (pelna diagnostyka)
-//   POST /api/admin/seed-plans-2026?key=seed-2026-05-13   → zaszywa do bazy
-// ====================================================================
-
 const SECRET_KEY = "seed-2026-05-13";
 const EXPIRES_AT = new Date("2026-05-31T23:59:59Z");
-
-// ====================================================================
-// TYGODNIE i MEZOCYKLE
-// ====================================================================
 
 interface WeekDef { week: number; mezo: string; mon: string; thu: string; }
 
@@ -58,10 +39,6 @@ const MEZO_NAZWY: Record<string, string> = {
   M3: "Powrot po przerwie", M4: "Rozwoj", M5: "Konsolidacja",
 };
 
-// ====================================================================
-// CURRICULUM
-// ====================================================================
-
 type Topics = [string, string][];
 
 const CURRICULUM_MIKRUS: Topics = [
@@ -73,7 +50,7 @@ const CURRICULUM_MIKRUS: Topics = [
   ["Krawedz zewnetrzna - luk szeroki",    "Slalom z pacholkami - 5 zwrotow"],
   ["Zwolnienie zabawowe (bez T-stop)",    "Kij - chwyt podstawowy"],
   ["Kij - prowadzenie krazka po linii",   "Berek z kijem"],
-  ["Zwrot 180° - na statyce",             "Zwrot 180° - w wolnym ruchu"],
+  ["Zwrot 180 - na statyce",              "Zwrot 180 - w wolnym ruchu"],
   ["Prowadzenie krazka po slalomie",      "Kij - manipulacja w miejscu"],
   ["Pchniecie krazka - podanie do mety",  "Pierwsze odbiory krazka"],
   ["Forma turniejowa - zabawa hokejowa",  "Mini-turniej zabawowy"],
@@ -118,7 +95,7 @@ const CURRICULUM_MINI_HOKEJ: Topics = [
 
 const CURRICULUM_MLODZIK: Topics = [
   ["Krawedzie agresywne - statyka",          "Start eksplozywny - z miejsca"],
-  ["Jazda 360° - statyka",                   "Long slide - na 1 nodze"],
+  ["Jazda 360 - statyka",                    "Long slide - na 1 nodze"],
   ["Power skating - kombinacja",             "Krawedzie glebokie - luk wasi"],
   ["Pchniecie boczne maks",                  "Test motoryczny + scrimmage"],
   ["Krawedzie agresywne (rolki)",            "Jazda po skosie - cross"],
@@ -158,10 +135,6 @@ const MEZO_CELE: Record<string, string> = {
   M5: "Gra zespolowa (A2-A4, O1-O3), Systemy (zaleznie od grupy)",
 };
 
-// ====================================================================
-// SCHEDULE TARGETS
-// ====================================================================
-
 interface ScheduleTarget {
   swh: SwhCategory; day: number; start: string; end: string; location: string;
 }
@@ -190,10 +163,6 @@ const GROUP_LABEL: Record<SwhCategory, string> = {
   MIKRUS: "Mikrus", MINI_HOKEJ: "Mini Hokej", MLODZIK: "Mlodzik", JUNIOR: "Junior",
 };
 
-// ====================================================================
-// HELPERS
-// ====================================================================
-
 function checkKey(req: NextRequest): NextResponse | null {
   const key = new URL(req.url).searchParams.get("key");
   if (key !== SECRET_KEY) return NextResponse.json({ error: "Invalid key" }, { status: 401 });
@@ -212,27 +181,22 @@ function plToUtc(dateStr: string, hour: number, minute: number): Date {
   return new Date(Date.UTC(year, month - 1, day, hour - offsetHours, minute, 0));
 }
 
-// === FALLBACK MATCHOWANIE GRUP ===
-// Dopasowuje grupe do SwhCategory po: 1) swhCategory, 2) nazwie, 3) AgeCategory.
 type GroupRow = { id: string; name: string; category: AgeCategory; swhCategory: SwhCategory | null };
 
 function matchGroup(groups: GroupRow[], swh: SwhCategory): GroupRow | null {
-  // Priorytet 1: swhCategory
   const bySwh = groups.find((g) => g.swhCategory === swh);
   if (bySwh) return bySwh;
 
-  // Priorytet 2: nazwa
   const byName = groups.find((g) => {
     const n = g.name.toLowerCase();
     if (swh === "MIKRUS") return /mikrus|nabor/.test(n);
     if (swh === "MINI_HOKEJ") return /mini.*hokej|minihokej/.test(n);
-    if (swh === "MLODZIK") return /mlodzik|m\u0142odzik/.test(n); // mlodzik lub mlodzik z polskim 'ł'
+    if (swh === "MLODZIK") return /mlodzik|m\u0142odzik/.test(n);
     if (swh === "JUNIOR") return /junior|open/.test(n);
     return false;
   });
   if (byName) return byName;
 
-  // Priorytet 3: wiek (AgeCategory)
   const byAge = groups.find((g) => {
     if (swh === "MIKRUS") return g.category === "U8";
     if (swh === "MINI_HOKEJ") return g.category === "U10" || g.category === "U12";
@@ -242,10 +206,6 @@ function matchGroup(groups: GroupRow[], swh: SwhCategory): GroupRow | null {
   });
   return byAge || null;
 }
-
-// ====================================================================
-// GET — diagnostyka i dry run
-// ====================================================================
 
 export async function GET(req: NextRequest) {
   const err = checkKey(req);
@@ -275,16 +235,12 @@ export async function GET(req: NextRequest) {
   const allMatched = mapping.every((m) => m.matched !== null);
 
   return NextResponse.json({
-    mode: "DRY RUN — nic nie zostalo zapisane",
+    mode: "DRY RUN v2 — nic nie zostalo zapisane",
     existingPlans: existing,
     canSeed: existing === 0 && allMatched,
     allGroupsInDb: allGroups,
     matching: mapping,
     plan: { yearly: 3, seasonal: 3, weekly: 69, sessions: 138, totalObjects: 213 },
-    structure: {
-      mezocykle: Object.entries(MEZO_NAZWY).map(([k, v]) => `${k}: ${v}`),
-      tygodnie: TYGODNIE.length,
-    },
     schedule: SCHEDULE_TARGETS,
     note: !allMatched
       ? "BRAK ktorejs z grup. Sprawdz allGroupsInDb i matching."
@@ -293,10 +249,6 @@ export async function GET(req: NextRequest) {
       : "OK do seedingu. POST aby zaszyc.",
   });
 }
-
-// ====================================================================
-// POST — realne zaszywanie
-// ====================================================================
 
 export async function POST(req: NextRequest) {
   const err = checkKey(req);
@@ -317,7 +269,6 @@ export async function POST(req: NextRequest) {
     select: { id: true, name: true, category: true, swhCategory: true },
   });
 
-  // Match grup
   const groupBySwh = new Map<SwhCategory, GroupRow>();
   const missing: SwhCategory[] = [];
   for (const swh of ["MIKRUS", "MINI_HOKEJ", "MLODZIK"] as SwhCategory[]) {
@@ -338,7 +289,6 @@ export async function POST(req: NextRequest) {
     yearly: 0, seasonal: 0, weekly: 0, sessions: 0,
   };
 
-  // === 0. Auto-uzupelnij swhCategory na grupach gdy brak ===
   for (const [swh, group] of groupBySwh.entries()) {
     if (group.swhCategory !== swh) {
       await prisma.trainingGroup.update({
@@ -349,7 +299,6 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // === 1. SCHEDULE — update/create ===
   for (const target of SCHEDULE_TARGETS) {
     const group = groupBySwh.get(target.swh)!;
     const existingSch = await prisma.schedule.findFirst({
@@ -373,7 +322,6 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // === 2-5. PLANY i SESJE per grupa ===
   for (const swh of ["MIKRUS", "MINI_HOKEJ", "MLODZIK"] as SwhCategory[]) {
     const group = groupBySwh.get(swh)!;
     const label = GROUP_LABEL[swh];
