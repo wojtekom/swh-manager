@@ -1,53 +1,46 @@
-{
-  "name": "swh-manager",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "prisma db push --accept-data-loss && next build",
-    "start": "next start",
-    "lint": "eslint",
-    "seed": "npx ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts",
-    "seed:skills": "npx ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed-skills.ts",
-    "seed:plans": "npx ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed-training-plans.ts",
-    "seed:all": "npm run seed:skills && npm run seed:plans"
-  },
-  "prisma": {
-    "seed": "npx ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts",
-    "postinstall": "prisma generate"
-  },
-  "dependencies": {
-    "@base-ui/react": "^1.3.0",
-    "@hookform/resolvers": "^5.2.2",
-    "@prisma/client": "^5.22.0",
-    "bcryptjs": "^3.0.3",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "docx": "^9.6.1",
-    "lucide-react": "^0.577.0",
-    "next": "16.2.1",
-    "next-auth": "^4.24.13",
-    "next-themes": "^0.4.6",
-    "prisma": "^5.22.0",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "react-hook-form": "^7.72.0",
-    "shadcn": "^4.1.0",
-    "sonner": "^2.0.7",
-    "tailwind-merge": "^3.5.0",
-    "tw-animate-css": "^1.4.0",
-    "xlsx": "^0.18.5",
-    "zod": "^4.3.6"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/bcryptjs": "^2.4.6",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.2.1",
-    "tailwindcss": "^4",
-    "typescript": "^5"
-  }
-}
+Plik na masterze, build w `package.json` ma już `prisma db push --accept-data-loss && next build`. Ale Deployments na GitHubie nadal pokazują poprzedni "Update page.tsx" jako aktywny — czyli **build się dopiero rozkręca** albo lista nie odświeżyła. Sprawdzę commit list, żeby zobaczyć, czy commit poszedł na master:Commit `2c60145 — Update package.json` na masterze, jest najnowszy. Build pewnie się buduje teraz. Sprawdzam jego status:Commit `2c60145` jest na masterze. Build się dopiero rozkręca — Vercel jeszcze nie zgłosił do GitHuba żadnego statusu, więc deployments page nadal pokazuje stary. To normalne: pierwsze 30-60 sekund Vercel klonuje repo i instaluje zależności, potem dopiero zaczyna `prisma db push`. Cały build z migracją zazwyczaj zajmuje **3-5 minut**.
+
+**Czekamy.** Za chwilę sprawdzę ponownie. Jak skończy się — sam ci powiem, czy zielono, czy znowu trzeba coś poprawić. Nie musisz nic robić, po prostu daj mi chwilę.🎉 **ZIELONO!** 
+
+```
+Update package.json — Active — Status: Deployed (completed)
+```
+
+Migracja przeszła. To znaczy, że `prisma db push` w Vercelu **podpięło się do twojego Neona przez `DIRECT_URL`** i **dosypało nowe kolumny do bazy**. Konkretnie:
+- enum `SwhCategory` (z wartościami MIKRUS / MINI_HOKEJ / MLODZIK / JUNIOR)
+- kolumna `swh_category` w tabelach: `players`, `training_groups`, `training_plans`, `tournaments`, `camps`
+- kolumna `topic` w tabeli `training_sessions`
+
+Wszyscy istniejący zawodnicy automatycznie dostali `swh_category = MINI_HOKEJ` (domyślna wartość — będziesz mógł zmienić każdemu indywidualnie później). Pozostałe pola są nullowe, więc bezpieczne.
+
+Sprawdzam jeszcze, czy strony, które wcześniej leciałyby z 500 (bo używały tych kolumn), teraz się otwierają normalnie:API `/api/calendar` zwraca **9 harmonogramów, 16 turniejów, 1 obóz** + sesje. Wszystko żyje, baza odpowiada, Prisma poprawnie czyta nowe kolumny. **Migracja w pełni udana.**
+
+Stan po tym, co właśnie zrobiliśmy:
+- Wszyscy istniejący zawodnicy mają `swh_category = MINI_HOKEJ` (default) — później przesuniesz każdego, do której grupy SWH faktycznie należy
+- Grupy / plany / turnieje / obozy mają `swh_category = NULL` — frontend domyśli się z `category` (PZHL) przez fallback `toSwhCategory()`, więc wizualnie działa od razu
+- Sesje treningowe mają `topic = NULL` — pokażą się jako "(brak tematu — <oryginalny title>)" w dzienniku; klikasz ołówek, wpisujesz temat, Enter → zapisane
+
+---
+
+## KOMIT 3 — sprzątanie (ostatni krok)
+
+Teraz musimy cofnąć `package.json` do oryginalnej formy. Bo gdyby został z `prisma db push` w build, **każdy kolejny deploy** w przyszłości próbowałby synchronizować schemat z bazą — niepotrzebnie wydłuża builda i otwiera furtkę do przypadkowych zmian struktury, gdyby ktoś coś zmienił w schemacie.
+
+**Co robisz:**
+
+1. Pobierz **`package-json-POWROT.json`** (był w poprzednich outputach — to ten z linią `"build": "prisma generate && next build"`, czyli identyczny jak oryginalny package.json sprzed naszej migracji).2. GitHub → korzeń repo → klik w **`package.json`** (ten sam co ostatnio).
+3. **Ołówek** → **Ctrl+A** → **Delete**.
+4. Notatnik z pobranym `package-json-POWROT.json` → **Ctrl+A** → **Ctrl+C** → wróć do GitHuba → **Ctrl+V**.
+5. Commit. Opis może być:
+   ```
+   chore: powrót build script po migracji
+   ```
+6. **Commit directly to master** → zielony przycisk.
+
+Build potrwa krótko (1-2 min), bo bez db push.
+
+---
+
+Po tym komicie kończymy ten etap. **Wszystko, co planowaliśmy z bazą i frontendami, będzie wdrożone.** Dalsze pakiety pracy (np. UI do przenoszenia zawodników między grupami SWH, seed 48 konspektów, nowa bateria Karty Rozwoju) możemy zacząć w nowych rozmowach, gdy będziesz miał czas.
+
+Napisz "zrobione" lub "zielono" jak build się skończy. To koniec dzisiejszej misji 🎯.
