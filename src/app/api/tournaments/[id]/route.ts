@@ -51,6 +51,8 @@ export async function PUT(
   // Przetwórz daty jeśli podane
   if (body.startDate) body.startDate = new Date(body.startDate);
   if (body.endDate) body.endDate = new Date(body.endDate);
+  if (body.meetingTime) body.meetingTime = new Date(body.meetingTime);
+  if (body.parentDeadline) body.parentDeadline = new Date(body.parentDeadline);
 
   const tournament = await prisma.tournament.update({
     where: { id },

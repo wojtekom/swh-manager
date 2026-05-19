@@ -8,779 +8,7 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-model User {
-  id                      String                    @id @default(cuid())
-  email                   String                    @unique
-  passwordHash            String
-  name                    String
-  phone                   String?
-  avatar                  String?
-  role                    Role                      @default(PARENT)
-  active                  Boolean                   @default(true)
-  createdAt               DateTime                  @default(now())
-  updatedAt               DateTime                  @updatedAt
-  consentDataAt           DateTime?
-  consentGoodPracticeAt   DateTime?
-  consentHealthAt         DateTime?
-  consentImageAt          DateTime?
-  consentTravelAt         DateTime?
-  announcementResponses   AnnouncementResponse[]
-  announcements           Announcement[]
-  camp_family_signups     camp_family_signups[]
-  createdCamps            Camp[]                    @relation("campCreator")
-  coach                   Coach?
-  conversations           ConversationParticipant[]
-  createdDrills           Drill[]                   @relation("drillCreator")
-  issuedLoans             EquipmentLoan[]           @relation("loanIssuer")
-  equipmentRequests       EquipmentRequest[]
-  sentMessages            Message[]
-  notificationPreferences NotificationPreference[]
-  notifications           Notification[]
-  orders                  Order[]
-  parentPlayers           ParentPlayer[]
-  playerUser              PlayerUser?
-  pushSubscriptions       PushSubscription[]
-  adminProposals          RequestProposal[]         @relation("adminProposals")
-  tournaments             Tournament[]
-  trainingPlans           TrainingPlan[]            @relation("planCreator")
-  fitnessResults          FitnessTestResult[]       @relation("fitnessCreator")
-
-  @@map("users")
-}
-
-model Player {
-  id                       String                     @id @default(cuid())
-  firstName                String
-  lastName                 String
-  dateOfBirth              DateTime
-  pesel                    String?                    @unique
-  category                 AgeCategory
-  position                 PlayerPosition?
-  jerseyNum                Int?
-  photo                    String?
-  status                   PlayerStatus               @default(ACTIVE)
-  notes                    String?
-  createdAt                DateTime                   @default(now())
-  updatedAt                DateTime                   @updatedAt
-  swhCategory              SwhCategory                @default(MINI_HOKEJ)
-  attendances              Attendance[]
-  callups                  Callup[]
-  campRegistrations        CampRegistration[]
-  equipmentLoans           EquipmentLoan[]
-  groupMembers             GroupMember[]
-  orders                   Order[]
-  parents                  ParentPlayer[]
-  payments                 Payment[]
-  player_fitness_tests     player_fitness_tests[]
-  player_skill_assessments player_skill_assessments[]
-  playerUser               PlayerUser?
-  fitnessResults           FitnessTestResult[]
-
-  @@map("players")
-}
-
-model ParentPlayer {
-  id       String @id @default(cuid())
-  parentId String
-  playerId String
-  parent   User   @relation(fields: [parentId], references: [id], onDelete: Cascade)
-  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
-
-  @@unique([parentId, playerId])
-  @@map("parent_players")
-}
-
-model PlayerUser {
-  id       String @id @default(cuid())
-  userId   String @unique
-  playerId String @unique
-  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("player_users")
-}
-
-model Coach {
-  id             String          @id @default(cuid())
-  userId         String          @unique
-  specialization String?
-  licenseNum     String?
-  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  trainingGroups TrainingGroup[]
-
-  @@map("coaches")
-}
-
-model TrainingGroup {
-  id            String         @id @default(cuid())
-  name          String
-  category      AgeCategory
-  coachId       String?
-  createdAt     DateTime       @default(now())
-  swhCategory   SwhCategory?
-  announcements Announcement[]
-  camps         Camp[]
-  conversations Conversation[]
-  members       GroupMember[]
-  schedules     Schedule[]
-  tournaments   Tournament[]
-  coach         Coach?         @relation(fields: [coachId], references: [id])
-  trainingPlans TrainingPlan[]
-
-  @@map("training_groups")
-}
-
-model GroupMember {
-  id       String        @id @default(cuid())
-  groupId  String
-  playerId String
-  group    TrainingGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  player   Player        @relation(fields: [playerId], references: [id], onDelete: Cascade)
-
-  @@unique([groupId, playerId])
-  @@map("group_members")
-}
-
-model Schedule {
-  id               String            @id @default(cuid())
-  groupId          String
-  dayOfWeek        Int
-  startTime        String
-  endTime          String
-  location         String
-  recurring        Boolean           @default(true)
-  active           Boolean           @default(true)
-  createdAt        DateTime          @default(now())
-  attendances      Attendance[]
-  group            TrainingGroup     @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  trainingSessions TrainingSession[]
-
-  @@map("schedules")
-}
-
-model Attendance {
-  id         String   @id @default(cuid())
-  scheduleId String
-  playerId   String
-  date       DateTime
-  present    Boolean  @default(false)
-  note       String?
-  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  schedule   Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
-
-  @@unique([scheduleId, playerId, date])
-  @@map("attendances")
-}
-
-model FeeDefinition {
-  id        String       @id @default(cuid())
-  name      String
-  amount    Float
-  frequency FeeFrequency
-  groupId   String?
-  active    Boolean      @default(true)
-  createdAt DateTime     @default(now())
-  payments  Payment[]
-
-  @@map("fee_definitions")
-}
-
-model Payment {
-  id         String        @id @default(cuid())
-  playerId   String
-  feeId      String
-  amount     Float
-  dueDate    DateTime
-  paidDate   DateTime?
-  paidAmount Float?
-  status     PaymentStatus @default(PENDING)
-  notes      String?
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
-  fee        FeeDefinition @relation(fields: [feeId], references: [id], onDelete: Cascade)
-  player     Player        @relation(fields: [playerId], references: [id], onDelete: Cascade)
-
-  @@map("payments")
-}
-
-model Recruitment {
-  id                  String            @id @default(cuid())
-  childFirstName      String
-  childLastName       String
-  childBirthDate      DateTime
-  category            AgeCategory
-  parentName          String
-  parentEmail         String
-  parentPhone         String
-  experience          String?
-  healthNotes         String?
-  howFound            String?
-  message             String?
-  consentHealth       Boolean           @default(false)
-  consentImage        Boolean           @default(false)
-  consentTravel       Boolean           @default(false)
-  consentGoodPractice Boolean           @default(false)
-  consentData         Boolean           @default(false)
-  status              RecruitmentStatus @default(NEW)
-  adminNotes          String?
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
-
-  @@map("recruitments")
-}
-
-model Announcement {
-  id        String                 @id @default(cuid())
-  title     String
-  content   String
-  type      AnnouncementType       @default(INFO)
-  authorId  String
-  groupId   String?
-  pinned    Boolean                @default(false)
-  createdAt DateTime               @default(now())
-  updatedAt DateTime               @updatedAt
-  responses AnnouncementResponse[]
-  author    User                   @relation(fields: [authorId], references: [id])
-  group     TrainingGroup?         @relation(fields: [groupId], references: [id])
-
-  @@map("announcements")
-}
-
-model AnnouncementResponse {
-  id             String       @id @default(cuid())
-  announcementId String
-  userId         String
-  response       String
-  comment        String?
-  createdAt      DateTime     @default(now())
-  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([announcementId, userId])
-  @@map("announcement_responses")
-}
-
-model Conversation {
-  id           String                    @id @default(cuid())
-  name         String?
-  groupId      String?
-  isGroup      Boolean                   @default(false)
-  createdAt    DateTime                  @default(now())
-  updatedAt    DateTime                  @updatedAt
-  participants ConversationParticipant[]
-  group        TrainingGroup?            @relation(fields: [groupId], references: [id])
-  messages     Message[]
-
-  @@map("conversations")
-}
-
-model ConversationParticipant {
-  id             String       @id @default(cuid())
-  conversationId String
-  userId         String
-  lastReadAt     DateTime     @default(now())
-  joinedAt       DateTime     @default(now())
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([conversationId, userId])
-  @@map("conversation_participants")
-}
-
-model Message {
-  id             String       @id @default(cuid())
-  conversationId String
-  senderId       String
-  content        String
-  createdAt      DateTime     @default(now())
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
-
-  @@map("messages")
-}
-
-model Tournament {
-  id              String            @id @default(cuid())
-  name            String
-  location        String
-  startDate       DateTime
-  endDate         DateTime?
-  category        AgeCategory
-  description     String?
-  status          TournamentStatus  @default(PLANNED)
-  groupId         String?
-  createdById     String
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  transportFee    Float?
-  meetingTime     DateTime?
-  meetingLocation String?
-  parentDeadline  DateTime?
-  swhCategory     SwhCategory?
-  callups         Callup[]
-  matches         TournamentMatch[]
-  createdBy       User              @relation(fields: [createdById], references: [id])
-  group           TrainingGroup?    @relation(fields: [groupId], references: [id])
-
-  @@map("tournaments")
-}
-
-model TournamentMatch {
-  id            String     @id @default(cuid())
-  tournamentId  String
-  opponent      String
-  isHome        Boolean    @default(true)
-  ourScore      Int?
-  opponentScore Int?
-  matchDate     DateTime
-  notes         String?
-  createdAt     DateTime   @default(now())
-  tournament    Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-
-  @@map("tournament_matches")
-}
-
-model Callup {
-  id              String          @id @default(cuid())
-  tournamentId    String
-  playerId        String
-  status          CallupStatus    @default(CALLED)
-  notes           String?
-  respondedAt     DateTime?
-  createdAt       DateTime        @default(now())
-  transportChoice TransportChoice @default(UNDECIDED)
-  notifiedAt      DateTime?
-  player          Player          @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  tournament      Tournament      @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-
-  @@unique([tournamentId, playerId])
-  @@map("callups")
-}
-
-model Camp {
-  id                     String                @id @default(cuid())
-  name                   String
-  type                   CampType              @default(CAMP)
-  location               String
-  startDate              DateTime
-  endDate                DateTime
-  category               AgeCategory?
-  description            String?
-  cost                   Float                 @default(0)
-  maxSpots               Int?
-  status                 CampStatus            @default(PLANNED)
-  groupId                String?
-  createdById            String
-  createdAt              DateTime              @default(now())
-  updatedAt              DateTime              @updatedAt
-  priceAthleteBus        Float?
-  priceAthleteOwn        Float?
-  priceCompanionBus      Float?
-  priceCompanionOwn      Float?
-  signupOpen             Boolean               @default(false)
-  signupDeadline         DateTime?
-  maxCompanionsPerFamily Int                   @default(3)
-  bankAccount            String?
-  bankAccountHolder      String?
-  paymentTitleTemplate   String?
-  depositAmount          Float?
-  depositDeadlineDays    Int                   @default(7)
-  fullPaymentDeadline    DateTime?
-  swhCategory            SwhCategory?
-  camp_family_signups    camp_family_signups[]
-  registrations          CampRegistration[]
-  createdBy              User                  @relation("campCreator", fields: [createdById], references: [id])
-  group                  TrainingGroup?        @relation(fields: [groupId], references: [id])
-
-  @@map("camps")
-}
-
-model CampRegistration {
-  id            String                 @id @default(cuid())
-  campId        String
-  playerId      String
-  status        CampRegistrationStatus @default(REGISTERED)
-  paidAmount    Float                  @default(0)
-  parentNotes   String?
-  adminNotes    String?
-  createdAt     DateTime               @default(now())
-  updatedAt     DateTime               @updatedAt
-  transportType TransportType          @default(BUS)
-  totalCost     Float?
-  camp          Camp                   @relation(fields: [campId], references: [id], onDelete: Cascade)
-  player        Player                 @relation(fields: [playerId], references: [id], onDelete: Cascade)
-
-  @@unique([campId, playerId])
-  @@map("camp_registrations")
-}
-
-model Equipment {
-  id            String             @id @default(cuid())
-  name          String
-  category      EquipmentCategory
-  brand         String?
-  model         String?
-  size          String?
-  serialNum     String?
-  condition     EquipmentCondition @default(NEW)
-  quantity      Int                @default(1)
-  available     Int                @default(1)
-  location      String?
-  purchaseDate  DateTime?
-  purchasePrice Float?
-  notes         String?
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  loans         EquipmentLoan[]
-
-  @@map("equipment")
-}
-
-model EquipmentLoan {
-  id          String              @id @default(cuid())
-  equipmentId String
-  playerId    String
-  issuedById  String
-  quantity    Int                 @default(1)
-  loanDate    DateTime            @default(now())
-  dueDate     DateTime?
-  returnDate  DateTime?
-  status      LoanStatus          @default(ACTIVE)
-  condition   EquipmentCondition?
-  notes       String?
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-  equipment   Equipment           @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
-  issuedBy    User                @relation("loanIssuer", fields: [issuedById], references: [id])
-  player      Player              @relation(fields: [playerId], references: [id], onDelete: Cascade)
-
-  @@map("equipment_loans")
-}
-
-model Catalog {
-  id          String        @id @default(cuid())
-  name        String
-  supplier    String
-  description String?
-  status      CatalogStatus @default(DRAFT)
-  opensAt     DateTime?
-  closesAt    DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  orders      Order[]
-  products    Product[]
-
-  @@index([status])
-  @@map("catalogs")
-}
-
-model Product {
-  id                String            @id @default(cuid())
-  catalogId         String
-  name              String
-  description       String?
-  brand             String
-  equipmentCategory EquipmentCategory
-  price             Float
-  imageUrl          String?
-  sizes             String[]
-  sizeChartUrl      String?
-  isActive          Boolean           @default(true)
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  ageGroup          String?
-  level             String?
-  productCode       String?
-  orderItems        OrderItem[]
-  catalog           Catalog           @relation(fields: [catalogId], references: [id], onDelete: Cascade)
-  proposals         RequestProposal[]
-
-  @@index([catalogId])
-  @@index([equipmentCategory])
-  @@map("products")
-}
-
-model Order {
-  id         String      @id @default(cuid())
-  catalogId  String
-  userId     String
-  playerId   String
-  status     OrderStatus @default(DRAFT)
-  notes      String?
-  totalPrice Float       @default(0)
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  items      OrderItem[]
-  catalog    Catalog     @relation(fields: [catalogId], references: [id])
-  player     Player      @relation(fields: [playerId], references: [id])
-  user       User        @relation(fields: [userId], references: [id])
-
-  @@index([catalogId])
-  @@index([userId])
-  @@index([playerId])
-  @@index([status])
-  @@map("orders")
-}
-
-model OrderItem {
-  id        String  @id @default(cuid())
-  orderId   String
-  productId String
-  size      String
-  quantity  Int     @default(1)
-  unitPrice Float
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product   Product @relation(fields: [productId], references: [id])
-
-  @@index([orderId])
-  @@map("order_items")
-}
-
-model EquipmentRequest {
-  id                String            @id @default(cuid())
-  userId            String
-  name              String
-  description       String?
-  equipmentCategory EquipmentCategory
-  quantity          Int               @default(1)
-  priority          RequestPriority   @default(MEDIUM)
-  status            RequestStatus     @default(PENDING)
-  notes             String?
-  adminNotes        String?
-  reviewedAt        DateTime?
-  reviewedBy        String?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  maxBudget         Float?
-  minBudget         Float?
-  playerName        String?
-  user              User              @relation(fields: [userId], references: [id])
-  proposals         RequestProposal[]
-
-  @@index([userId])
-  @@index([status])
-  @@map("equipment_requests")
-}
-
-model RequestProposal {
-  id         String           @id @default(cuid())
-  requestId  String
-  productId  String
-  adminId    String
-  comment    String?
-  isAccepted Boolean          @default(false)
-  createdAt  DateTime         @default(now())
-  admin      User             @relation("adminProposals", fields: [adminId], references: [id])
-  product    Product          @relation(fields: [productId], references: [id])
-  request    EquipmentRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
-
-  @@index([requestId])
-  @@map("request_proposals")
-}
-
-model TrainingPlan {
-  id            String            @id @default(cuid())
-  name          String
-  description   String?
-  category      AgeCategory
-  groupId       String?
-  createdById   String
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-  parentPlanId  String?
-  periodEnd     DateTime?
-  periodStart   DateTime?
-  planType      PlanType          @default(WEEKLY)
-  season        String?
-  summary       String?
-  totalDuration Int               @default(0)
-  totalSessions Int               @default(0)
-  swhCategory   SwhCategory?
-  createdBy     User              @relation("planCreator", fields: [createdById], references: [id])
-  group         TrainingGroup?    @relation(fields: [groupId], references: [id])
-  parentPlan    TrainingPlan?     @relation("PlanHierarchy", fields: [parentPlanId], references: [id])
-  childPlans    TrainingPlan[]    @relation("PlanHierarchy")
-  sessions      TrainingSession[]
-
-  @@map("training_plans")
-}
-
-model TrainingSession {
-  id                  String                @id @default(cuid())
-  planId              String
-  title               String
-  date                DateTime?
-  scheduleId          String?
-  duration            Int                   @default(60)
-  objectives          String?
-  notes               String?
-  order               Int                   @default(0)
-  createdAt           DateTime              @default(now())
-  topic               String?
-  drills              SessionDrill[]
-  session_skill_focus session_skill_focus[]
-  plan                TrainingPlan          @relation(fields: [planId], references: [id], onDelete: Cascade)
-  schedule            Schedule?             @relation(fields: [scheduleId], references: [id])
-
-  @@map("training_sessions")
-}
-
-model Drill {
-  id          String         @id @default(cuid())
-  name        String
-  category    DrillCategory
-  description String?
-  duration    Int?
-  equipment   String?
-  diagram     String?
-  difficulty  Int            @default(1)
-  ageGroups   String?
-  createdById String
-  createdAt   DateTime       @default(now())
-  createdBy   User           @relation("drillCreator", fields: [createdById], references: [id])
-  sessions    SessionDrill[]
-
-  @@map("drills")
-}
-
-model SessionDrill {
-  id        String          @id @default(cuid())
-  sessionId String
-  drillId   String
-  order     Int             @default(0)
-  duration  Int?
-  notes     String?
-  drill     Drill           @relation(fields: [drillId], references: [id], onDelete: Cascade)
-  session   TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-
-  @@map("session_drills")
-}
-
-model Notification {
-  id        String              @id @default(cuid())
-  userId    String
-  type      NotificationType
-  title     String
-  body      String
-  link      String?
-  channel   NotificationChannel @default(IN_APP)
-  status    NotificationStatus  @default(PENDING)
-  readAt    DateTime?
-  sentAt    DateTime?
-  errorMsg  String?
-  metadata  String?
-  createdAt DateTime            @default(now())
-  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, status])
-  @@index([userId, readAt])
-  @@index([createdAt])
-  @@map("notifications")
-}
-
-model NotificationPreference {
-  id     String           @id @default(cuid())
-  userId String
-  type   NotificationType
-  email  Boolean          @default(true)
-  push   Boolean          @default(true)
-  sms    Boolean          @default(false)
-  inApp  Boolean          @default(true)
-  user   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, type])
-  @@map("notification_preferences")
-}
-
-model PushSubscription {
-  id        String   @id @default(cuid())
-  userId    String
-  endpoint  String   @unique
-  p256dh    String
-  auth      String
-  userAgent String?
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("push_subscriptions")
-}
-
-model camp_family_signups {
-  id              String        @id
-  campId          String
-  parentId        String
-  companionsCount Int           @default(0)
-  companionNames  String?
-  transportType   TransportType @default(BUS)
-  notes           String?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime
-  camps           Camp          @relation(fields: [campId], references: [id], onDelete: Cascade)
-  users           User          @relation(fields: [parentId], references: [id], onDelete: Cascade)
-
-  @@unique([campId, parentId])
-  @@index([campId])
-}
-
-model player_fitness_tests {
-  id       String   @id
-  playerId String
-  testType String
-  result   String
-  period   String
-  testDate DateTime @default(now())
-  notes    String?
-  players  Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
-
-  @@index([playerId])
-  @@index([testType])
-}
-
-model player_skill_assessments {
-  id                String            @id
-  playerId          String
-  skillId           String
-  grade             String
-  notes             String?
-  assessedBy        String?
-  assessedAt        DateTime          @default(now())
-  players           Player            @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  skill_definitions skill_definitions @relation(fields: [skillId], references: [id], onDelete: Cascade)
-
-  @@index([playerId])
-  @@index([skillId])
-}
-
-model session_skill_focus {
-  id                String            @id
-  sessionId         String
-  skillId           String
-  intensity         String            @default("TRAIN")
-  training_sessions TrainingSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  skill_definitions skill_definitions @relation(fields: [skillId], references: [id], onDelete: Cascade)
-
-  @@unique([sessionId, skillId])
-  @@index([sessionId])
-  @@index([skillId])
-}
-
-model skill_definitions {
-  id                       String                     @id
-  code                     String                     @unique
-  name                     String
-  description              String?
-  category                 String
-  sortOrder                Int                        @default(0)
-  expectedU8               String?
-  expectedU10              String?
-  expectedU12              String?
-  expectedU14              String?
-  player_skill_assessments player_skill_assessments[]
-  session_skill_focus      session_skill_focus[]
-
-  @@index([category])
-}
+// ==================== ENUMS ====================
 
 enum Role {
   ADMIN
@@ -826,11 +54,20 @@ enum AgeCategory {
   SENIOR
 }
 
+// === NOWY ENUM: kategorie grup SWH (niezależne od wieku PZHL) ===
+// Przypisuje je trener ręcznie, niezależnie od rocznika dziecka.
+enum SwhCategory {
+  MIKRUS      // nabór + najmłodsi (prowadzi Andrzej Podgajny)
+  MINI_HOKEJ  // cross-ice — gra na szerokość, USA Hockey ADM
+  MLODZIK     // pełny lód, wprowadzanie systemów
+  JUNIOR      // najstarsi
+}
+
 enum PlanType {
-  YEARLY
-  SEASONAL
-  MONTHLY
-  WEEKLY
+  YEARLY // plan roczny
+  SEASONAL // plan sezonowy (rolkowy / lodowy)
+  MONTHLY // plan miesięczny
+  WEEKLY // plan tygodniowy
 }
 
 enum NotificationType {
@@ -859,6 +96,236 @@ enum NotificationStatus {
   READ
 }
 
+// === NOWY ENUM dla zapisów rodziców ===
+enum TransportType {
+  BUS // autokar SWH
+  OWN // własny transport
+}
+
+// ==================== AUTH & USERS ====================
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  phone        String?
+  avatar       String?
+  role         Role     @default(PARENT)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  coach                   Coach?
+  parentPlayers           ParentPlayer[]
+  playerUser              PlayerUser?
+  announcements           Announcement[]
+  announcementResponses   AnnouncementResponse[]
+  conversations           ConversationParticipant[]
+  sentMessages            Message[]
+  tournaments             Tournament[]
+  createdCamps            Camp[]                    @relation("campCreator")
+  issuedLoans             EquipmentLoan[]           @relation("loanIssuer")
+  orders                  Order[]
+  equipmentRequests       EquipmentRequest[]
+  adminProposals          RequestProposal[]         @relation("adminProposals")
+  trainingPlans           TrainingPlan[]            @relation("planCreator")
+  createdDrills           Drill[]                   @relation("drillCreator")
+  notifications           Notification[]
+  notificationPreferences NotificationPreference[]
+  pushSubscriptions       PushSubscription[]
+  // === NOWA RELACJA: zapisy rodzin na obozy ===
+  campFamilySignups       CampFamilySignup[]        @relation("familySignups")
+
+  // Zgody rodzica
+  consentImageAt        DateTime? // zgoda na wizerunek
+  consentTravelAt       DateTime? // zgoda na wyjazdy/turnieje
+  consentHealthAt       DateTime? // oświadczenie zdrowotne
+  consentGoodPracticeAt DateTime? // dobre praktyki
+  consentDataAt         DateTime? // RODO
+
+  fitnessResults FitnessTestResult[] @relation("fitnessCreator")
+
+  @@map("users")
+}
+
+model Player {
+  id           String          @id @default(cuid())
+  firstName    String
+  lastName     String
+  dateOfBirth  DateTime
+  pesel        String?         @unique
+  category     AgeCategory
+  swhCategory  SwhCategory     @default(MINI_HOKEJ) // NOWE — grupa SWH (niezależna od wieku)
+  position     PlayerPosition?
+  jerseyNum    Int?
+  photo        String?
+  status       PlayerStatus    @default(ACTIVE)
+  notes        String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  // Relations
+  parents           ParentPlayer[]
+  playerUser        PlayerUser?
+  groupMembers      GroupMember[]
+  attendances       Attendance[]
+  payments          Payment[]
+  callups           Callup[]
+  campRegistrations CampRegistration[]
+  equipmentLoans    EquipmentLoan[]
+  orders            Order[]
+  skillAssessments  PlayerSkillAssessment[]
+  fitnessTests      PlayerFitnessTest[]
+  fitnessResults    FitnessTestResult[]
+
+  @@map("players")
+}
+
+// Rodzic <-> Zawodnik (wiele do wielu)
+model ParentPlayer {
+  id       String @id @default(cuid())
+  parentId String
+  playerId String
+
+  parent User   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([parentId, playerId])
+  @@map("parent_players")
+}
+
+// Zawodnik 16+ z własnym kontem
+model PlayerUser {
+  id       String @id @default(cuid())
+  userId   String @unique
+  playerId String @unique
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@map("player_users")
+}
+
+model Coach {
+  id             String  @id @default(cuid())
+  userId         String  @unique
+  specialization String?
+  licenseNum     String?
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trainingGroups TrainingGroup[]
+
+  @@map("coaches")
+}
+
+// ==================== GRUPY TRENINGOWE ====================
+
+model TrainingGroup {
+  id          String       @id @default(cuid())
+  name        String
+  category    AgeCategory
+  swhCategory SwhCategory? // NOWE — kategoria SWH grupy
+  coachId     String?
+  createdAt   DateTime     @default(now())
+
+  coach         Coach?         @relation(fields: [coachId], references: [id], onDelete: SetNull)
+  members       GroupMember[]
+  schedules     Schedule[]
+  announcements Announcement[]
+  conversations Conversation[]
+  tournaments   Tournament[]
+  camps         Camp[]
+  trainingPlans TrainingPlan[]
+
+  @@map("training_groups")
+}
+
+model GroupMember {
+  id       String @id @default(cuid())
+  groupId  String
+  playerId String
+
+  group  TrainingGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  player Player        @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, playerId])
+  @@map("group_members")
+}
+
+// ==================== HARMONOGRAM I OBECNOŚCI ====================
+
+model Schedule {
+  id        String   @id @default(cuid())
+  groupId   String
+  dayOfWeek Int // 0=Niedz, 1=Pon, ..., 6=Sob
+  startTime String // "17:00"
+  endTime   String // "18:30"
+  location  String
+  recurring Boolean  @default(true)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  group            TrainingGroup     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  attendances      Attendance[]
+  trainingSessions TrainingSession[]
+
+  @@map("schedules")
+}
+
+model Attendance {
+  id         String   @id @default(cuid())
+  scheduleId String
+  playerId   String
+  date       DateTime
+  present    Boolean  @default(false)
+  note       String?
+
+  schedule Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  player   Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([scheduleId, playerId, date])
+  @@map("attendances")
+}
+
+// ==================== SKŁADKI I PŁATNOŚCI ====================
+
+model FeeDefinition {
+  id        String       @id @default(cuid())
+  name      String
+  amount    Float
+  frequency FeeFrequency
+  groupId   String? // null = dotyczy wszystkich
+  active    Boolean      @default(true)
+  createdAt DateTime     @default(now())
+
+  payments Payment[]
+
+  @@map("fee_definitions")
+}
+
+model Payment {
+  id         String        @id @default(cuid())
+  playerId   String
+  feeId      String
+  amount     Float
+  dueDate    DateTime
+  paidDate   DateTime?
+  paidAmount Float?
+  status     PaymentStatus @default(PENDING)
+  notes      String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  player Player        @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  fee    FeeDefinition @relation(fields: [feeId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+// ==================== NABÓR / REKRUTACJA ====================
+
 enum RecruitmentStatus {
   NEW
   CONTACTED
@@ -866,65 +333,338 @@ enum RecruitmentStatus {
   REJECTED
 }
 
-enum AnnouncementType {
-  INFO
-  TRAINING
-  MATCH
-  RSVP
+model Recruitment {
+  id                  String            @id @default(cuid())
+  // Dane dziecka
+  childFirstName      String
+  childLastName       String
+  childBirthDate      DateTime
+  category            AgeCategory
+  // Dane rodzica/opiekuna
+  parentName          String
+  parentEmail         String
+  parentPhone         String
+  // Dodatkowe
+  experience          String? // doświadczenie hokejowe
+  healthNotes         String? // uwagi zdrowotne
+  howFound            String? // skąd dowiedzieli się o klubie
+  message             String? // dodatkowa wiadomość
+  // Zgody
+  consentHealth       Boolean           @default(false) // oświadczenie o stanie zdrowia
+  consentImage        Boolean           @default(false) // zgoda na wykorzystanie wizerunku
+  consentTravel       Boolean           @default(false) // zgoda na udział w meczach/turniejach wyjazdowych
+  consentGoodPractice Boolean           @default(false) // zgoda na dobre praktyki / regulamin
+  consentData         Boolean           @default(false) // zgoda na przetwarzanie danych osobowych
+  // Status
+  status              RecruitmentStatus @default(NEW)
+  adminNotes          String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  @@map("recruitments")
 }
 
+// ==================== KOMUNIKACJA ====================
+
+enum AnnouncementType {
+  INFO // ogłoszenie informacyjne
+  TRAINING // dotyczy treningu
+  MATCH // dotyczy meczu/turnieju
+  RSVP // wymaga potwierdzenia
+}
+
+model Announcement {
+  id        String           @id @default(cuid())
+  title     String
+  content   String
+  type      AnnouncementType @default(INFO)
+  authorId  String
+  groupId   String? // null = do wszystkich
+  pinned    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  author    User                   @relation(fields: [authorId], references: [id])
+  group     TrainingGroup?         @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  responses AnnouncementResponse[]
+
+  @@map("announcements")
+}
+
+model AnnouncementResponse {
+  id             String   @id @default(cuid())
+  announcementId String
+  userId         String
+  response       String // "yes" | "no" | "maybe"
+  comment        String?
+  createdAt      DateTime @default(now())
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, userId])
+  @@map("announcement_responses")
+}
+
+// ==================== KOMUNIKATOR ====================
+
+model Conversation {
+  id        String   @id @default(cuid())
+  name      String? // null dla 1:1, nazwa dla grupowych
+  groupId   String? // powiązana grupa treningowa (opcjonalnie)
+  isGroup   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  group        TrainingGroup?            @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String   @id @default(cuid())
+  conversationId String
+  userId         String
+  lastReadAt     DateTime @default(now())
+  joinedAt       DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+// ==================== TURNIEJE I POWOŁANIA ====================
+
 enum TournamentStatus {
-  PLANNED
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
+  PLANNED // zaplanowany
+  IN_PROGRESS // w trakcie
+  COMPLETED // zakończony
+  CANCELLED // odwołany
 }
 
 enum CallupStatus {
-  CALLED
-  CONFIRMED
-  DECLINED
-  INJURED
+  CALLED // powołany
+  CONFIRMED // potwierdzony
+  DECLINED // odmówił
+  INJURED // kontuzjowany
 }
 
+enum TransportChoice {
+  UNDECIDED // rodzic nie odpowiedział
+  BUS // autokar SWH
+  OWN // własny transport
+  NONE // nie jedzie (gdy DECLINED)
+}
+
+model Tournament {
+  id               String           @id @default(cuid())
+  name             String
+  location         String
+  startDate        DateTime
+  endDate          DateTime?
+  category         AgeCategory
+  swhCategory      SwhCategory? // NOWE — kategoria SWH turnieju
+  description      String?
+  status           TournamentStatus @default(PLANNED)
+  groupId          String? // powiązana grupa treningowa
+  transportFee     Float? // opłata transportowa (np. 150 zł autokar); null = brak autokaru
+  meetingTime      DateTime? // godzina zbiórki przed wyjazdem
+  meetingLocation  String? // miejsce zbiórki (np. "Parking Nowe Kino")
+  parentDeadline   DateTime? // termin odpowiedzi rodziców
+  createdById      String
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  group     TrainingGroup?    @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  createdBy User              @relation(fields: [createdById], references: [id])
+  matches   TournamentMatch[]
+  callups   Callup[]
+
+  @@map("tournaments")
+}
+
+model TournamentMatch {
+  id            String   @id @default(cuid())
+  tournamentId  String
+  opponent      String
+  isHome        Boolean  @default(true)
+  ourScore      Int?
+  opponentScore Int?
+  matchDate     DateTime
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@map("tournament_matches")
+}
+
+model Callup {
+  id              String          @id @default(cuid())
+  tournamentId    String
+  playerId        String
+  status          CallupStatus    @default(CALLED)
+  transportChoice TransportChoice @default(UNDECIDED)
+  notes           String?
+  notifiedAt      DateTime? // kiedy wysłano powiadomienie rodzicowi
+  respondedAt     DateTime?
+  createdAt       DateTime        @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player     Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, playerId])
+  @@map("callups")
+}
+
+// ==================== OBOZY I WYJAZDY ====================
+
 enum CampType {
-  CAMP
-  TRIP
-  WORKSHOP
+  CAMP // obóz sportowy
+  TRIP // wyjazd na turniej/mecz
+  WORKSHOP // warsztaty / szkolenie
 }
 
 enum CampStatus {
   PLANNED
-  OPEN
-  CLOSED
+  OPEN // zapisy otwarte
+  CLOSED // zapisy zamknięte
   IN_PROGRESS
   COMPLETED
   CANCELLED
 }
 
 enum CampRegistrationStatus {
-  REGISTERED
-  CONFIRMED
-  WAITLIST
-  CANCELLED
+  REGISTERED // zapisany
+  CONFIRMED // potwierdzony (opłacony)
+  WAITLIST // lista rezerwowa
+  CANCELLED // anulowany
 }
 
+model Camp {
+  id          String       @id @default(cuid())
+  name        String
+  type        CampType     @default(CAMP)
+  location    String
+  startDate   DateTime
+  endDate     DateTime
+  category    AgeCategory?
+  swhCategory SwhCategory? // NOWE — kategoria SWH obozu
+  description String?
+  cost        Float        @default(0)
+  maxSpots    Int?
+  status      CampStatus   @default(PLANNED)
+  groupId     String?
+  createdById String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // === NOWE POLA: zapisy rodziców (additive — wszystkie nullable) ===
+  // Stawki dla zapisu z formularza rodzica (gdy null, używamy `cost` jako fallback)
+  priceAthleteBus        Float?
+  priceAthleteOwn        Float?
+  priceCompanionBus      Float?
+  priceCompanionOwn      Float?
+
+  // Limity i terminy zapisów rodziców
+  signupOpen             Boolean   @default(false)
+  signupDeadline         DateTime?
+  maxCompanionsPerFamily Int       @default(3)
+
+  // Dane do przelewu i płatności
+  bankAccount          String?
+  bankAccountHolder    String?
+  paymentTitleTemplate String?
+  depositAmount        Float?
+  depositDeadlineDays  Int       @default(7)
+  fullPaymentDeadline  DateTime?
+
+  group          TrainingGroup?     @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  createdBy      User               @relation("campCreator", fields: [createdById], references: [id])
+  registrations  CampRegistration[]
+  familySignups  CampFamilySignup[]
+
+  @@map("camps")
+}
+
+model CampRegistration {
+  id          String                 @id @default(cuid())
+  campId      String
+  playerId    String
+  status      CampRegistrationStatus @default(REGISTERED)
+  paidAmount  Float                  @default(0)
+  parentNotes String?
+  adminNotes  String?
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  // === NOWE POLA: dane z formularza rodzica ===
+  transportType TransportType @default(BUS)
+  totalCost     Float? // snapshot kosztu zawodnika z chwili zapisu
+
+  camp   Camp   @relation(fields: [campId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([campId, playerId])
+  @@map("camp_registrations")
+}
+
+// === NOWY MODEL: zapis rodziny (towarzysze + transport całej rodziny) ===
+// Jeden zapis na rodzica per obóz. CampRegistration zostaje per zawodnik.
+model CampFamilySignup {
+  id              String        @id @default(cuid())
+  campId          String
+  parentId        String
+  companionsCount Int           @default(0)
+  companionNames  String? // JSON array imion
+  transportType   TransportType @default(BUS)
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  camp   Camp @relation(fields: [campId], references: [id], onDelete: Cascade)
+  parent User @relation("familySignups", fields: [parentId], references: [id], onDelete: Cascade)
+
+  @@unique([campId, parentId])
+  @@index([campId])
+  @@map("camp_family_signups")
+}
+
+// ==================== SPRZĘT, MAGAZYN, WYPOŻYCZALNIA ====================
+
 enum EquipmentCategory {
-  HELMET
-  SKATES
-  STICK
-  GLOVES
-  PADS
-  JERSEY
-  PANTS
-  BAG
-  GOALIE_GEAR
-  OTHER
-  ROLLER_SKATES
-  NECK_GUARD
-  MOUTHGUARD
-  TRAINING_AID
-  ACCESSORY
+  HELMET // kask
+  SKATES // łyżwy
+  ROLLER_SKATES // łyżworolki
+  STICK // kij
+  GLOVES // rękawice
+  PADS // ochraniacze (naramienniki, łokcie, golenie)
+  JERSEY // koszulka
+  PANTS // spodnie hokejowe
+  BAG // torba
+  GOALIE_GEAR // sprzęt bramkarski
+  NECK_GUARD // ochraniacz szyi
+  MOUTHGUARD // ochraniacz na zęby
+  TRAINING_AID // pomoce treningowe
+  ACCESSORY // akcesoria (sznurówki, paski, bidony)
+  OTHER // inne
 }
 
 enum EquipmentCondition {
@@ -933,15 +673,62 @@ enum EquipmentCondition {
   FAIR
   POOR
   DAMAGED
-  RETIRED
+  RETIRED // wycofany
 }
 
 enum LoanStatus {
-  ACTIVE
-  RETURNED
-  OVERDUE
-  LOST
+  ACTIVE // wypożyczony
+  RETURNED // zwrócony
+  OVERDUE // po terminie
+  LOST // zgubiony
 }
+
+model Equipment {
+  id            String             @id @default(cuid())
+  name          String
+  category      EquipmentCategory
+  brand         String?
+  model         String?
+  size          String?
+  serialNum     String?
+  condition     EquipmentCondition @default(NEW)
+  quantity      Int                @default(1)
+  available     Int                @default(1)
+  location      String? // lokalizacja w magazynie
+  purchaseDate  DateTime?
+  purchasePrice Float?
+  notes         String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  loans EquipmentLoan[]
+
+  @@map("equipment")
+}
+
+model EquipmentLoan {
+  id           String              @id @default(cuid())
+  equipmentId  String
+  playerId     String
+  issuedById   String // kto wydał
+  quantity     Int                 @default(1)
+  loanDate     DateTime            @default(now())
+  dueDate      DateTime?
+  returnDate   DateTime?
+  status       LoanStatus          @default(ACTIVE)
+  condition    EquipmentCondition? // stan przy zwrocie
+  notes        String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  player    Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  issuedBy  User      @relation("loanIssuer", fields: [issuedById], references: [id])
+
+  @@map("equipment_loans")
+}
+
+// ==================== ZAMÓWIENIA SPRZĘTU (przez stowarzyszenie) ====================
 
 enum CatalogStatus {
   DRAFT
@@ -959,6 +746,91 @@ enum OrderStatus {
   CANCELLED
 }
 
+model Catalog {
+  id          String        @id @default(cuid())
+  name        String
+  supplier    String
+  description String?
+  status      CatalogStatus @default(DRAFT)
+  opensAt     DateTime?
+  closesAt    DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  products Product[]
+  orders   Order[]
+
+  @@index([status])
+  @@map("catalogs")
+}
+
+model Product {
+  id                String            @id @default(cuid())
+  catalogId         String
+  name              String
+  description       String?
+  brand             String
+  equipmentCategory EquipmentCategory
+  productCode       String? // kod producenta (np. SKXR90, RHFT850)
+  ageGroup          String? // YT (Youth), JR (Junior), INT (Intermediate), SR (Senior)
+  level             String? // Elite, Premium, Mid, Entry, Budget
+  price             Float
+  imageUrl          String?
+  sizes             String[]
+  sizeChartUrl      String?
+  isActive          Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  catalog    Catalog           @relation(fields: [catalogId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+  proposals  RequestProposal[]
+
+  @@index([catalogId])
+  @@index([equipmentCategory])
+  @@map("products")
+}
+
+model Order {
+  id         String      @id @default(cuid())
+  catalogId  String
+  userId     String
+  playerId   String
+  status     OrderStatus @default(DRAFT)
+  notes      String?
+  totalPrice Float       @default(0)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  catalog Catalog     @relation(fields: [catalogId], references: [id])
+  user    User        @relation(fields: [userId], references: [id])
+  player  Player      @relation(fields: [playerId], references: [id])
+  items   OrderItem[]
+
+  @@index([catalogId])
+  @@index([userId])
+  @@index([playerId])
+  @@index([status])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String @id @default(cuid())
+  orderId   String
+  productId String
+  size      String
+  quantity  Int    @default(1)
+  unitPrice Float
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+// ==================== ZAPOTRZEBOWANIE SPRZĘTU (TRENER + RODZIC) ====================
+
 enum RequestPriority {
   LOW
   MEDIUM
@@ -967,54 +839,289 @@ enum RequestPriority {
 
 enum RequestStatus {
   PENDING
+  PROPOSED // admin zaproponował produkt z katalogu
+  ACCEPTED // rodzic zaakceptował propozycję
   APPROVED
   REJECTED
   FULFILLED
-  PROPOSED
-  ACCEPTED
 }
+
+model EquipmentRequest {
+  id                String            @id @default(cuid())
+  userId            String
+  playerName        String? // imię dziecka (dla rodzica)
+  name              String
+  description       String?
+  equipmentCategory EquipmentCategory
+  quantity          Int               @default(1)
+  priority          RequestPriority   @default(MEDIUM)
+  status            RequestStatus     @default(PENDING)
+  minBudget         Float? // min budżet rodzica (EUR)
+  maxBudget         Float? // max budżet rodzica (EUR)
+  notes             String?
+  adminNotes        String?
+  reviewedAt        DateTime?
+  reviewedBy        String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  user      User              @relation(fields: [userId], references: [id])
+  proposals RequestProposal[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("equipment_requests")
+}
+
+model RequestProposal {
+  id         String   @id @default(cuid())
+  requestId  String
+  productId  String
+  adminId    String
+  comment    String? // komentarz admina dlaczego ten produkt
+  isAccepted Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  request EquipmentRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  product Product          @relation(fields: [productId], references: [id])
+  admin   User             @relation("adminProposals", fields: [adminId], references: [id])
+
+  @@index([requestId])
+  @@map("request_proposals")
+}
+
+// ==================== PROGRAM SZKOLENIOWY ====================
 
 enum DrillCategory {
-  SKATING
-  SHOOTING
-  PASSING
-  STICKHANDLING
-  TACTICS
-  CONDITIONING
-  GOALIE
-  WARMUP
-  COOLDOWN
-  GAME
+  SKATING // jazda na łyżwach
+  SHOOTING // strzały
+  PASSING // podania
+  STICKHANDLING // prowadzenie krążka
+  TACTICS // taktyka
+  CONDITIONING // kondycja / wytrzymałość
+  GOALIE // ćwiczenia bramkarskie
+  WARMUP // rozgrzewka
+  COOLDOWN // schładzanie
+  GAME // gra / scrimmage
 }
 
-enum SwhCategory {
-  MIKRUS
-  MINI_HOKEJ
-  MLODZIK
-  JUNIOR
+model TrainingPlan {
+  id             String       @id @default(cuid())
+  name           String
+  description    String?
+  category       AgeCategory
+  swhCategory    SwhCategory? // NOWE — kategoria SWH planu
+  planType       PlanType     @default(WEEKLY)
+  parentPlanId   String?
+  season         String? // np. "2026/2027", "roller-2026", "ice-2026"
+  periodStart    DateTime? // początek okresu
+  periodEnd      DateTime? // koniec okresu
+  summary        String? // auto-generowane podsumowanie z planów podrzędnych
+  totalSessions  Int          @default(0) // łączna liczba sesji (w tym z podplanów)
+  totalDuration  Int          @default(0) // łączny czas (min) z podplanów
+  groupId        String?
+  createdById    String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  parentPlan TrainingPlan?     @relation("PlanHierarchy", fields: [parentPlanId], references: [id], onDelete: SetNull)
+  childPlans TrainingPlan[]    @relation("PlanHierarchy")
+  group      TrainingGroup?    @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  createdBy  User              @relation("planCreator", fields: [createdById], references: [id])
+  sessions   TrainingSession[]
+
+  @@map("training_plans")
 }
 
-enum TransportChoice {
-  UNDECIDED
-  BUS
-  OWN
-  NONE
+model TrainingSession {
+  id         String    @id @default(cuid())
+  planId     String
+  title      String
+  topic      String?   // NOWE — temat dnia (krótki tytuł sesji, edytowalny)
+  date       DateTime?
+  scheduleId String? // powiązanie z harmonogramem
+  duration   Int       @default(60) // minuty
+  objectives String? // cele sesji
+  notes      String?
+  order      Int       @default(0)
+  createdAt  DateTime  @default(now())
+
+  plan       TrainingPlan        @relation(fields: [planId], references: [id], onDelete: Cascade)
+  schedule   Schedule?           @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  drills     SessionDrill[]
+  skillFocus SessionSkillFocus[]
+
+  @@map("training_sessions")
 }
 
-enum TransportType {
-  BUS
-  OWN
+model Drill {
+  id          String        @id @default(cuid())
+  name        String
+  category    DrillCategory
+  description String?
+  duration    Int? // minuty
+  equipment   String? // wymagany sprzęt
+  diagram     String? // URL do schematu
+  difficulty  Int           @default(1) // 1-5
+  ageGroups   String? // "U8,U10,U12" — kompatybilne grupy
+  createdById String
+  createdAt   DateTime      @default(now())
+
+  createdBy User           @relation("drillCreator", fields: [createdById], references: [id])
+  sessions  SessionDrill[]
+
+  @@map("drills")
 }
 
-// ── Testy sprawnościowe (HC + ČSLH) — Karta Rozwoju ─────────────────────────
+model SessionDrill {
+  id        String  @id @default(cuid())
+  sessionId String
+  drillId   String
+  order     Int     @default(0)
+  duration  Int? // nadpisanie czasu ćwiczenia
+  notes     String?
+
+  session TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  drill   Drill           @relation(fields: [drillId], references: [id], onDelete: Cascade)
+
+  @@map("session_drills")
+}
+
+// ==================== POWIADOMIENIA ====================
+
+model Notification {
+  id        String              @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String
+  link      String?
+  channel   NotificationChannel @default(IN_APP)
+  status    NotificationStatus  @default(PENDING)
+  readAt    DateTime?
+  sentAt    DateTime?
+  errorMsg  String?
+  metadata  String?
+  createdAt DateTime            @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([userId, readAt])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id     String           @id @default(cuid())
+  userId String
+  type   NotificationType
+  email  Boolean          @default(true)
+  push   Boolean          @default(true)
+  sms    Boolean          @default(false)
+  inApp  Boolean          @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@map("notification_preferences")
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+// ==================== KARTA ROZWOJU (Gruth 2016) ====================
+
+model SkillDefinition {
+  id          String  @id @default(cuid())
+  code        String  @unique // np. "R1", "Ł3", "K10"
+  name        String
+  description String?
+  category    String // ROLKI, ŁYŻWY, KRĄŻEK, PODANIA, STRZAŁY, OBRONA, ATAK, CIAŁO
+  sortOrder   Int     @default(0)
+  expectedU8  String? // oczekiwany etap W/T/D/O dla U8
+  expectedU10 String?
+  expectedU12 String?
+  expectedU14 String?
+
+  assessments  PlayerSkillAssessment[]
+  sessionFocus SessionSkillFocus[]
+
+  @@index([category])
+  @@map("skill_definitions")
+}
+
+model PlayerSkillAssessment {
+  id         String   @id @default(cuid())
+  playerId   String
+  skillId    String
+  grade      String // W=Wprowadzony, T=Trenowany, D=Doskonalony, O=Opanowany
+  notes      String?
+  assessedBy String? // imię trenera
+  assessedAt DateTime @default(now())
+
+  player Player          @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  skill  SkillDefinition @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@index([skillId])
+  @@map("player_skill_assessments")
+}
+
+model PlayerFitnessTest {
+  id       String   @id @default(cuid())
+  playerId String
+  testType String // np. "sprint_30m", "cooper", "skok_w_dal", "kozlowanie"
+  result   String // wynik jako tekst (np. "5.2s", "2100m")
+  period   String // "start" | "progress" | "end"
+  testDate DateTime @default(now())
+  notes    String?
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId])
+  @@index([testType])
+  @@map("player_fitness_tests")
+}
+
+// Powiązanie sesji treningowej z umiejętnościami Grutha
+model SessionSkillFocus {
+  id        String @id @default(cuid())
+  sessionId String
+  skillId   String
+  intensity String @default("TRAIN") // INTRO=wprowadzenie, TRAIN=trening, DRILL=doskonalenie, GAME=w grze
+
+  session TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  skill   SkillDefinition @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, skillId])
+  @@index([sessionId])
+  @@index([skillId])
+  @@map("session_skill_focus")
+}
+
+// ==================== TESTY SPRAWNOŚCIOWE HC+ČSLH ====================
+
 model FitnessTestResult {
   id          String   @id @default(cuid())
   playerId    String
   year        Int
   month       Int
-  testCode    String   // T1..T7
+  testCode    String
   rawValue    Float?
-  grade       Int?     // 1-4 auto-calculated
+  grade       Int?
   notes       String?
   createdById String
   createdAt   DateTime @default(now())

@@ -12,6 +12,14 @@ const sessionSchema = z.object({
   objectives: z.string().optional(),
   notes: z.string().optional(),
   drillIds: z.array(z.string()).optional(),
+  skillFocus: z
+    .array(
+      z.object({
+        skillId: z.string(),
+        intensity: z.enum(["INTRO", "TRAIN", "DRILL", "GAME"]).default("TRAIN"),
+      })
+    )
+    .optional(),
 });
 
 // POST /api/training-plans/[id]/sessions
@@ -53,9 +61,16 @@ export async function POST(
           order: i,
         })),
       } : undefined,
+      skillFocus: parsed.data.skillFocus ? {
+        create: parsed.data.skillFocus.map((sf) => ({
+          skillId: sf.skillId,
+          intensity: sf.intensity,
+        })),
+      } : undefined,
     },
     include: {
       drills: { include: { drill: true }, orderBy: { order: "asc" } },
+      skillFocus: { include: { skill: true } },
     },
   });
 
@@ -85,7 +100,7 @@ export async function PUT(req: NextRequest) {
   }
 
   const updated = await prisma.$transaction(async (tx) => {
-    const sess = await tx.trainingSession.update({
+    await tx.trainingSession.update({
       where: { id: sessionId },
       data: {
         title: parsed.data.title,
@@ -110,10 +125,25 @@ export async function PUT(req: NextRequest) {
       }
     }
 
+    if (parsed.data.skillFocus) {
+      await tx.sessionSkillFocus.deleteMany({ where: { sessionId } });
+      if (parsed.data.skillFocus.length > 0) {
+        await tx.sessionSkillFocus.createMany({
+          data: parsed.data.skillFocus.map((sf) => ({
+            sessionId,
+            skillId: sf.skillId,
+            intensity: sf.intensity,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    }
+
     return tx.trainingSession.findUnique({
       where: { id: sessionId },
       include: {
         drills: { include: { drill: true }, orderBy: { order: "asc" } },
+        skillFocus: { include: { skill: true } },
       },
     });
   });

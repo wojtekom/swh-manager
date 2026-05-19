@@ -129,3 +129,173 @@
     @apply font-sans;
   }
 }
+/* ============ SWH klimat lodowo-hokejowy ============ */
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display), system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  /* Tła stron — subtelny lodowy gradient */
+  .bg-ice {
+    background:
+      linear-gradient(180deg, #f0f9ff 0%, #ffffff 35%, #fef3c7 100%);
+    background-attachment: fixed;
+  }
+  .dark .bg-ice {
+    background: linear-gradient(180deg, oklch(0.16 0.02 240) 0%, oklch(0.18 0.02 240) 60%, oklch(0.18 0.03 80) 100%);
+    background-attachment: fixed;
+  }
+
+  /* Karta SWH "rink" — biała z lekkim lodowym gradientem */
+  .card-rink {
+    background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+    border: 1px solid rgba(2, 132, 199, 0.1);
+    box-shadow: 0 1px 3px rgba(2, 132, 199, 0.05), 0 4px 24px rgba(2, 132, 199, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .card-rink:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.12), 0 12px 40px rgba(2, 132, 199, 0.08);
+  }
+  .dark .card-rink {
+    background: linear-gradient(135deg, oklch(0.22 0.02 240) 0%, oklch(0.20 0.03 230) 100%);
+    border-color: rgba(125, 211, 252, 0.15);
+  }
+
+  /* Karta powołania PILNEGO — amber pulse */
+  .card-callup-pending {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 60%, #ffffff 100%);
+    border: 2px solid #fde68a;
+    position: relative;
+    overflow: hidden;
+  }
+  .card-callup-pending::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 80px; height: 80px;
+    background: radial-gradient(circle at top right, rgba(245, 158, 11, 0.2), transparent 70%);
+    pointer-events: none;
+  }
+  .dark .card-callup-pending {
+    background: linear-gradient(135deg, oklch(0.25 0.05 80) 0%, oklch(0.20 0.03 230) 100%);
+    border-color: oklch(0.55 0.10 80);
+  }
+
+  /* Karta powołania POTWIERDZONEGO */
+  .card-callup-confirmed {
+    background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%);
+    border: 1.5px solid #6ee7b7;
+  }
+  .dark .card-callup-confirmed {
+    background: linear-gradient(135deg, oklch(0.22 0.04 165) 0%, oklch(0.20 0.02 240) 100%);
+    border-color: oklch(0.50 0.10 165);
+  }
+
+  /* Karta powołania ODRZUCONEGO */
+  .card-callup-declined {
+    background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
+    border: 1.5px solid #fecaca;
+    opacity: 0.92;
+  }
+  .dark .card-callup-declined {
+    background: linear-gradient(135deg, oklch(0.22 0.04 25) 0%, oklch(0.20 0.02 240) 100%);
+    border-color: oklch(0.50 0.10 25);
+  }
+
+  /* Header z gradientem dla pojedynczej strony powołania */
+  .header-ice-blue {
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 50%, #0c4a6e 100%);
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+  .header-ice-blue::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 160px; height: 160px;
+    background: radial-gradient(circle, rgba(251, 191, 36, 0.25), transparent 70%);
+    transform: translate(40px, -50px);
+    filter: blur(20px);
+    pointer-events: none;
+  }
+
+  /* Pulsujący badge "wymaga odpowiedzi" */
+  .badge-pulse {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: #78350f;
+    font-weight: 700;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.3);
+    animation: badge-pulse 2.5s ease-in-out infinite;
+  }
+  @keyframes badge-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.4); }
+    50% { box-shadow: 0 0 0 6px rgba(251, 191, 36, 0); }
+  }
+
+  /* Przyciski akcji */
+  .btn-ice-primary {
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+    color: white;
+    font-weight: 600;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+  }
+  .btn-ice-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+  }
+  .btn-confirm-bus {
+    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+    color: white;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .btn-confirm-bus:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
+  }
+  .btn-confirm-own {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .btn-confirm-own:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+  }
+  .btn-decline-soft {
+    background: white;
+    color: #991b1b;
+    border: 2px solid #fecaca;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .btn-decline-soft:hover {
+    background: #fef2f2;
+    border-color: #f87171;
+  }
+  .dark .btn-decline-soft {
+    background: oklch(0.22 0.04 25);
+    color: oklch(0.85 0.05 25);
+    border-color: oklch(0.45 0.10 25);
+  }
+
+  /* Ikonki nagłówków sekcji — okrągłe z gradientem */
+  .icon-section {
+    width: 2rem; height: 2rem;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .icon-section-trophy { background: linear-gradient(135deg, #fbbf24 0%, #f97316 100%); }
+  .icon-section-camp   { background: linear-gradient(135deg, #34d399 0%, #059669 100%); }
+  .icon-section-ice    { background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%); }
+}

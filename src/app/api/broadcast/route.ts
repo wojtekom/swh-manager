@@ -5,16 +5,18 @@ import { z } from "zod";
 import { sendNotification } from "@/lib/notifications/sender";
 
 const broadcastSchema = z.object({
-  content: z.string().min(1, "Treść jest wymagana").max(2000),
+  content: z.string().min(1, "Tresc jest wymagana").max(2000),
   target: z.enum(["ALL", "GROUP"]),
   groupId: z.string().optional(),
-  channels: z.object({
-    inApp: z.boolean().default(true),
-    sms: z.boolean().default(false),
-  }).default({ inApp: true, sms: false }),
+  channels: z
+    .object({
+      inApp: z.boolean().default(true),
+      sms: z.boolean().default(false),
+    })
+    .default({ inApp: true, sms: false }),
 });
 
-// POST /api/broadcast — ADMIN/COACH wysyła wiadomość masową
+// POST /api/broadcast - ADMIN/COACH wysyla wiadomosc masowa
 export async function POST(req: NextRequest) {
   const { session, error } = await getSessionOrError();
   if (error) return error;
@@ -29,67 +31,83 @@ export async function POST(req: NextRequest) {
 
   const { content, target, groupId, channels } = parsed.data;
 
-  // Determine recipients
-  let recipientIds: string[] = [];
+  // Zbierz identyfikatory odbiorcow (User.id) w Set zeby uniknac duplikatow
+  const recipientSet = new Set<string>();
 
   if (target === "GROUP" && groupId) {
-    // Get all parents of players in this group + coaches
+    // 1) Wszyscy rodzice zawodnikow w grupie
     const members = await prisma.groupMember.findMany({
       where: { groupId },
       include: {
         player: {
           include: {
             parents: { select: { parentId: true } },
+            playerUser: { select: { userId: true } },
           },
         },
       },
     });
 
-    const parentIds = new Set<string>();
     for (const member of members) {
+      // Rodzice (moze byc wielu na zawodnika)
       for (const pp of member.player.parents) {
-        parentIds.add(pp.parentId);
+        recipientSet.add(pp.parentId);
+      }
+      // Zawodnik 16+ z wlasnym kontem
+      if (member.player.playerUser?.userId) {
+        recipientSet.add(member.player.playerUser.userId);
       }
     }
 
-    // Add group coach
+    // 2) Trener grupy - TrainingGroup.coachId wskazuje na Coach.id,
+    //    a Coach.userId to User.id ktory odbiera wiadomosci.
+    //    Wczesniejsza wersja dodawala Coach.id zamiast User.id i trener
+    //    nigdy nie dostawal wiadomosci.
     const group = await prisma.trainingGroup.findUnique({
       where: { id: groupId },
-      select: { coachId: true },
+      include: { coach: { select: { userId: true } } },
     });
-    if (group?.coachId) parentIds.add(group.coachId);
-
-    recipientIds = Array.from(parentIds);
+    if (group?.coach?.userId) {
+      recipientSet.add(group.coach.userId);
+    }
   } else {
-    // ALL active users
+    // ALL aktywni uzytkownicy
     const users = await prisma.user.findMany({
       where: { active: true },
       select: { id: true },
     });
-    recipientIds = users.map((u) => u.id);
+    users.forEach((u: { id: string }) => recipientSet.add(u.id));
   }
 
-  // Exclude sender
-  recipientIds = recipientIds.filter((id) => id !== session!.user.id);
+  // Usun nadawce z listy odbiorcow
+  recipientSet.delete(session!.user.id);
 
-  if (recipientIds.length === 0) {
-    return NextResponse.json({ error: "Brak odbiorców" }, { status: 400 });
+  // Filtr koncowy: tylko aktywni uzytkownicy
+  const recipientIds = Array.from(recipientSet);
+  const activeRecipients = await prisma.user.findMany({
+    where: { id: { in: recipientIds }, active: true },
+    select: { id: true },
+  });
+  const finalIds = activeRecipients.map((u: { id: string }) => u.id);
+
+  if (finalIds.length === 0) {
+    return NextResponse.json({ error: "Brak odbiorcow" }, { status: 400 });
   }
 
-  // Create a group conversation with all recipients
-  const allParticipants = [session!.user.id, ...recipientIds];
-
+  // Nazwa konwersacji
   let groupName: string;
   if (target === "GROUP" && groupId) {
-    const group = await prisma.trainingGroup.findUnique({
+    const g = await prisma.trainingGroup.findUnique({
       where: { id: groupId },
       select: { name: true },
     });
-    groupName = `Wiadomość do: ${group?.name || "Grupa"}`;
+    groupName = `Wiadomosc do: ${g?.name || "Grupa"}`;
   } else {
-    groupName = "Wiadomość do wszystkich";
+    groupName = "Wiadomosc do wszystkich";
   }
 
+  // Stworz grupowa konwersacje
+  const allParticipants = [session!.user.id, ...finalIds];
   const conversation = await prisma.conversation.create({
     data: {
       name: groupName,
@@ -101,7 +119,6 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Send the message
   const message = await prisma.message.create({
     data: {
       conversationId: conversation.id,
@@ -110,29 +127,32 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Update conversation timestamp
   await prisma.conversation.update({
     where: { id: conversation.id },
     data: { updatedAt: new Date() },
   });
 
-  // Send notifications to all recipients
+  // Wyslij notyfikacje do odbiorcow
   let sentCount = 0;
-  for (const userId of recipientIds) {
+  const failures: string[] = [];
+
+  for (const userId of finalIds) {
     try {
-      // In-app notification (always)
       if (channels.inApp) {
         await sendNotification({
           userId,
           type: "NEW_MESSAGE",
-          title: `Wiadomość od ${session!.user.name}`,
+          title: `Wiadomosc od ${session!.user.name}`,
           body: content.substring(0, 150),
           link: "/dashboard/messages",
-          metadata: { messageId: message.id, conversationId: conversation.id, broadcast: true },
+          metadata: {
+            messageId: message.id,
+            conversationId: conversation.id,
+            broadcast: true,
+          },
         });
       }
 
-      // SMS notification (if requested and user has phone)
       if (channels.sms) {
         const user = await prisma.user.findUnique({
           where: { id: userId },
@@ -145,15 +165,20 @@ export async function POST(req: NextRequest) {
       }
 
       sentCount++;
-    } catch (error) {
-      console.error(`[BROADCAST] Failed for user ${userId}:`, error);
+    } catch (err) {
+      failures.push(userId);
+      console.error(`[BROADCAST] Nie udalo sie wyslac do ${userId}:`, err);
     }
   }
 
-  return NextResponse.json({
-    conversationId: conversation.id,
-    messageId: message.id,
-    recipientCount: recipientIds.length,
-    sentCount,
-  }, { status: 201 });
+  return NextResponse.json(
+    {
+      conversationId: conversation.id,
+      messageId: message.id,
+      recipientCount: finalIds.length,
+      sentCount,
+      failedCount: failures.length,
+    },
+    { status: 201 }
+  );
 }

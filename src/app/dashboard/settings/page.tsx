@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   User as UserIcon,
   GraduationCap,
+  MailPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -89,6 +90,10 @@ export default function SettingsPage() {
   const [formPassword, setFormPassword] = useState("");
   const [formSaving, setFormSaving] = useState(false);
 
+  // --- Aktywacja zaimportowanych rodzicow ---
+  const [pendingCount, setPendingCount] = useState<number | null>(null);
+  const [activating, setActivating] = useState(false);
+
   const isAdmin = session?.user?.role === "ADMIN";
 
   // Zaladuj profil
@@ -123,6 +128,60 @@ export default function SettingsPage() {
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
+
+  // --- Liczba zaimportowanych rodzicow czekajacych na aktywacje ---
+  const fetchPendingCount = useCallback(async () => {
+    if (!isAdmin) return;
+    try {
+      const res = await fetch("/api/invitations/activate-imported");
+      if (res.ok) {
+        const data = await res.json();
+        setPendingCount(typeof data.count === "number" ? data.count : 0);
+      }
+    } catch {
+      // cicho - nie przeszkadza w uzyciu strony
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
+    fetchPendingCount();
+  }, [fetchPendingCount]);
+
+  // --- Masowa aktywacja kont zaimportowanych rodzicow ---
+  const handleActivateAll = async () => {
+    if (!isAdmin) return;
+    if (!pendingCount || pendingCount === 0) {
+      toast.info("Brak kont do aktywacji");
+      return;
+    }
+    const ok = window.confirm(
+      `Wyslac email aktywacyjny do ${pendingCount} rodzicow?\n\n` +
+        `Kazdy otrzyma link do ustawienia wlasnego hasla. Link jest wazny 14 dni.`
+    );
+    if (!ok) return;
+    setActivating(true);
+    try {
+      const res = await fetch("/api/invitations/activate-imported", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(
+          `Wyslano ${data.sent} z ${data.total} zaproszen` +
+            (data.failed > 0 ? ` (${data.failed} bledow - sprawdz logi)` : "")
+        );
+        fetchPendingCount();
+      } else {
+        toast.error(data.error || "Blad wysylki");
+      }
+    } catch {
+      toast.error("Blad polaczenia z serwerem");
+    } finally {
+      setActivating(false);
+    }
+  };
 
   // --- Zapis profilu ---
   const handleProfileSave = async () => {
@@ -409,10 +468,26 @@ export default function SettingsPage() {
                 <Users className="h-5 w-5" />
                 Uzytkownicy ({users.length})
               </CardTitle>
-              <Button onClick={openNewUserDialog} size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Dodaj uzytkownika
-              </Button>
+              <div className="flex gap-2">
+                {pendingCount !== null && pendingCount > 0 && (
+                  <Button
+                    onClick={handleActivateAll}
+                    size="sm"
+                    variant="outline"
+                    disabled={activating}
+                    title="Wyslij email aktywacyjny do rodzicow zaimportowanych z pliku (ktorzy nie maja jeszcze ustawionego hasla)"
+                  >
+                    <MailPlus className="h-4 w-4 mr-2" />
+                    {activating
+                      ? "Wysylanie..."
+                      : `Aktywuj zaimportowanych (${pendingCount})`}
+                  </Button>
+                )}
+                <Button onClick={openNewUserDialog} size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Dodaj uzytkownika
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>

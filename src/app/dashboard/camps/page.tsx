@@ -13,10 +13,10 @@ import {
   Trash2,
   ChevronRight,
   DollarSign,
-  UserCheck,
   Clock,
-  Ban,
   X,
+  Info,
+  TrendingDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +37,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
 
 interface Camp {
   id: string;
@@ -109,10 +108,17 @@ const REG_STATUS: Record<string, { label: string; color: string }> = {
 
 const CATEGORIES = ["U8", "U10", "U12", "U14", "U16", "U18", "SENIOR"];
 
+const PARTNER_CLUBS = [
+  "UKS Feniks Piaseczno",
+  "Orły Przasnysz",
+  "Jets Mińsk Mazowiecki",
+];
+
 export default function CampsPage() {
   const { data: session, status: authStatus } = useSession();
   const router = useRouter();
-  const isAdminOrCoach = session?.user?.role === "ADMIN" || session?.user?.role === "COACH";
+  const isAdminOrCoach =
+    session?.user?.role === "ADMIN" || session?.user?.role === "COACH";
 
   const [camps, setCamps] = useState<Camp[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -130,7 +136,13 @@ export default function CampsPage() {
       if (cRes.ok) setCamps(await cRes.json());
       if (gRes.ok) {
         const data = await gRes.json();
-        setGroups(data.map((g: Group) => ({ id: g.id, name: g.name, category: g.category })));
+        setGroups(
+          data.map((g: Group) => ({
+            id: g.id,
+            name: g.name,
+            category: g.category,
+          }))
+        );
       }
     } catch {
       toast.error("Błąd pobierania danych");
@@ -144,12 +156,17 @@ export default function CampsPage() {
     if (authStatus === "authenticated") fetchData();
   }, [authStatus, router, fetchData]);
 
-  const filtered = camps.filter((c) => filterType === "ALL" || c.type === filterType);
+  const filtered = camps.filter(
+    (c) => filterType === "ALL" || c.type === filterType
+  );
 
   async function handleDelete(id: string) {
     if (!confirm("Usunąć obóz/wyjazd?")) return;
     const res = await fetch(`/api/camps/${id}`, { method: "DELETE" });
-    if (res.ok) { toast.success("Usunięto"); fetchData(); }
+    if (res.ok) {
+      toast.success("Usunięto");
+      fetchData();
+    }
   }
 
   async function handleStatusChange(id: string, status: string) {
@@ -158,13 +175,20 @@ export default function CampsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     });
-    if (res.ok) { toast.success("Status zmieniony"); fetchData(); }
+    if (res.ok) {
+      toast.success("Status zmieniony");
+      fetchData();
+    }
   }
 
-  // Statystyki
-  const upcoming = camps.filter((c) => ["PLANNED", "OPEN"].includes(c.status)).length;
+  const upcoming = camps.filter((c) =>
+    ["PLANNED", "OPEN"].includes(c.status)
+  ).length;
   const active = camps.filter((c) => c.status === "IN_PROGRESS").length;
-  const totalRegistered = camps.reduce((sum, c) => sum + c._count.registrations, 0);
+  const totalRegistered = camps.reduce(
+    (sum, c) => sum + c._count.registrations,
+    0
+  );
 
   return (
     <div className="space-y-6">
@@ -174,14 +198,19 @@ export default function CampsPage() {
           <p className="text-muted-foreground">{camps.length} wydarzeń</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Select value={filterType} onValueChange={(v) => v && setFilterType(v)}>
+          <Select
+            value={filterType}
+            onValueChange={(v) => v && setFilterType(v)}
+          >
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Typ" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">Wszystkie</SelectItem>
               {Object.entries(TYPE_MAP).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{v.label}</SelectItem>
+                <SelectItem key={k} value={k}>
+                  {v.label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -193,7 +222,6 @@ export default function CampsPage() {
         </div>
       </div>
 
-      {/* Statystyki */}
       <div className="grid grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-4 pb-3 text-center">
@@ -229,10 +257,15 @@ export default function CampsPage() {
           {filtered.map((camp) => {
             const typeInfo = TYPE_MAP[camp.type] || TYPE_MAP.CAMP;
             const statusInfo = STATUS_MAP[camp.status] || STATUS_MAP.PLANNED;
-            const spotsLeft = camp.maxSpots ? camp.maxSpots - camp._count.registrations : null;
-            const days = Math.ceil(
-              (new Date(camp.endDate).getTime() - new Date(camp.startDate).getTime()) / (1000 * 60 * 60 * 24)
-            ) + 1;
+            const spotsLeft = camp.maxSpots
+              ? camp.maxSpots - camp._count.registrations
+              : null;
+            const days =
+              Math.ceil(
+                (new Date(camp.endDate).getTime() -
+                  new Date(camp.startDate).getTime()) /
+                  (1000 * 60 * 60 * 24)
+              ) + 1;
 
             return (
               <Card key={camp.id} className="hover:shadow-md transition-shadow">
@@ -240,18 +273,28 @@ export default function CampsPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${typeInfo.color}`}>
+                        <span
+                          className={`text-xs font-medium px-2 py-0.5 rounded-full ${typeInfo.color}`}
+                        >
                           {typeInfo.label}
                         </span>
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusInfo.color}`}>
+                        <span
+                          className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusInfo.color}`}
+                        >
                           {statusInfo.label}
                         </span>
-                        {camp.category && <Badge variant="outline">{camp.category}</Badge>}
+                        {camp.category && (
+                          <Badge variant="outline">{camp.category}</Badge>
+                        )}
                       </div>
                       <CardTitle className="text-lg">{camp.name}</CardTitle>
                     </div>
                     {isAdminOrCoach && (
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(camp.id)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(camp.id)}
+                      >
                         <Trash2 className="h-3.5 w-3.5 text-destructive" />
                       </Button>
                     )}
@@ -264,9 +307,15 @@ export default function CampsPage() {
                     </span>
                     <span className="flex items-center gap-1">
                       <Calendar className="h-3.5 w-3.5" />
-                      {new Date(camp.startDate).toLocaleDateString("pl-PL", { day: "numeric", month: "short" })}
+                      {new Date(camp.startDate).toLocaleDateString("pl-PL", {
+                        day: "numeric",
+                        month: "short",
+                      })}
                       {" – "}
-                      {new Date(camp.endDate).toLocaleDateString("pl-PL", { day: "numeric", month: "short" })}
+                      {new Date(camp.endDate).toLocaleDateString("pl-PL", {
+                        day: "numeric",
+                        month: "short",
+                      })}
                     </span>
                     <span className="flex items-center gap-1">
                       <Clock className="h-3.5 w-3.5" /> {days} dni
@@ -276,7 +325,8 @@ export default function CampsPage() {
                   <div className="flex items-center gap-4 text-sm">
                     <span className="flex items-center gap-1">
                       <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                      {camp._count.registrations}{camp.maxSpots ? `/${camp.maxSpots}` : ""} zapisanych
+                      {camp._count.registrations}
+                      {camp.maxSpots ? `/${camp.maxSpots}` : ""} zapisanych
                     </span>
                     {spotsLeft !== null && spotsLeft > 0 && (
                       <span className="text-green-600 text-xs font-medium">
@@ -284,7 +334,9 @@ export default function CampsPage() {
                       </span>
                     )}
                     {spotsLeft !== null && spotsLeft <= 0 && (
-                      <span className="text-red-600 text-xs font-medium">Brak miejsc</span>
+                      <span className="text-red-600 text-xs font-medium">
+                        Brak miejsc
+                      </span>
                     )}
                     {camp.cost > 0 && (
                       <span className="flex items-center gap-1 font-medium">
@@ -298,14 +350,18 @@ export default function CampsPage() {
                     {isAdminOrCoach && (
                       <Select
                         value={camp.status}
-                        onValueChange={(v) => v && handleStatusChange(camp.id, v)}
+                        onValueChange={(v) =>
+                          v && handleStatusChange(camp.id, v)
+                        }
                       >
                         <SelectTrigger className="h-8 text-xs w-[155px]">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           {Object.entries(STATUS_MAP).map(([k, v]) => (
-                            <SelectItem key={k} value={k}>{v.label}</SelectItem>
+                            <SelectItem key={k} value={k}>
+                              {v.label}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -316,7 +372,8 @@ export default function CampsPage() {
                       className="ml-auto"
                       onClick={() => setDetailId(camp.id)}
                     >
-                      Szczegóły <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                      Szczegóły{" "}
+                      <ChevronRight className="h-3.5 w-3.5 ml-1" />
                     </Button>
                   </div>
                 </CardContent>
@@ -348,21 +405,44 @@ export default function CampsPage() {
 // ==================== Dialog tworzenia ====================
 
 function CreateCampDialog({
-  open, onClose, groups, onSaved,
+  open,
+  onClose,
+  groups,
+  onSaved,
 }: {
-  open: boolean; onClose: () => void; groups: Group[]; onSaved: () => void;
+  open: boolean;
+  onClose: () => void;
+  groups: Group[];
+  onSaved: () => void;
 }) {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
-    name: "", type: "CAMP", location: "", startDate: "", endDate: "",
-    category: "", description: "", cost: 0, maxSpots: "", groupId: "",
+    name: "",
+    type: "CAMP",
+    location: "",
+    startDate: "",
+    endDate: "",
+    category: "",
+    description: "",
+    cost: 0,
+    maxSpots: "",
+    groupId: "",
   });
 
   useEffect(() => {
-    if (open) setForm({
-      name: "", type: "CAMP", location: "", startDate: "", endDate: "",
-      category: "", description: "", cost: 0, maxSpots: "", groupId: "",
-    });
+    if (open)
+      setForm({
+        name: "",
+        type: "CAMP",
+        location: "",
+        startDate: "",
+        endDate: "",
+        category: "",
+        description: "",
+        cost: 0,
+        maxSpots: "",
+        groupId: "",
+      });
   }, [open]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -398,28 +478,49 @@ function CreateCampDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
             <Label>Nazwa</Label>
-            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="np. Obóz letni 2026" required />
+            <Input
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder="np. Obóz letni 2026"
+              required
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label>Typ</Label>
-              <Select value={form.type} onValueChange={(v) => v && setForm({ ...form, type: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select
+                value={form.type}
+                onValueChange={(v) => v && setForm({ ...form, type: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   {Object.entries(TYPE_MAP).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v.label}</SelectItem>
+                    <SelectItem key={k} value={k}>
+                      {v.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1">
               <Label>Kategoria</Label>
-              <Select value={form.category || "NONE"} onValueChange={(v) => v && setForm({ ...form, category: v === "NONE" ? "" : v })}>
-                <SelectTrigger><SelectValue placeholder="Wszystkie" /></SelectTrigger>
+              <Select
+                value={form.category || "NONE"}
+                onValueChange={(v) =>
+                  v && setForm({ ...form, category: v === "NONE" ? "" : v })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Wszystkie" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="NONE">Wszystkie</SelectItem>
                   {CATEGORIES.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -427,46 +528,95 @@ function CreateCampDialog({
           </div>
           <div className="space-y-1">
             <Label>Lokalizacja</Label>
-            <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="np. Zakopane" required />
+            <Input
+              value={form.location}
+              onChange={(e) => setForm({ ...form, location: e.target.value })}
+              placeholder="np. Zakopane"
+              required
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label>Data rozpoczęcia</Label>
-              <Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} required />
+              <Input
+                type="date"
+                value={form.startDate}
+                onChange={(e) =>
+                  setForm({ ...form, startDate: e.target.value })
+                }
+                required
+              />
             </div>
             <div className="space-y-1">
               <Label>Data zakończenia</Label>
-              <Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} required />
+              <Input
+                type="date"
+                value={form.endDate}
+                onChange={(e) => setForm({ ...form, endDate: e.target.value })}
+                required
+              />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label>Koszt (PLN)</Label>
-              <Input type="number" min={0} value={form.cost} onChange={(e) => setForm({ ...form, cost: Number(e.target.value) })} />
+              <Input
+                type="number"
+                min={0}
+                value={form.cost}
+                onChange={(e) =>
+                  setForm({ ...form, cost: Number(e.target.value) })
+                }
+              />
             </div>
             <div className="space-y-1">
               <Label>Limit miejsc</Label>
-              <Input type="number" min={1} value={form.maxSpots} onChange={(e) => setForm({ ...form, maxSpots: e.target.value })} placeholder="Bez limitu" />
+              <Input
+                type="number"
+                min={1}
+                value={form.maxSpots}
+                onChange={(e) =>
+                  setForm({ ...form, maxSpots: e.target.value })
+                }
+                placeholder="Bez limitu"
+              />
             </div>
           </div>
           <div className="space-y-1">
             <Label>Grupa</Label>
-            <Select value={form.groupId || "NONE"} onValueChange={(v) => v && setForm({ ...form, groupId: v === "NONE" ? "" : v })}>
-              <SelectTrigger><SelectValue placeholder="Brak" /></SelectTrigger>
+            <Select
+              value={form.groupId || "NONE"}
+              onValueChange={(v) =>
+                v && setForm({ ...form, groupId: v === "NONE" ? "" : v })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Brak" />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="NONE">Brak</SelectItem>
                 {groups.map((g) => (
-                  <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                  <SelectItem key={g.id} value={g.id}>
+                    {g.name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1">
             <Label>Opis</Label>
-            <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} />
+            <Textarea
+              value={form.description}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
+              rows={2}
+            />
           </div>
           <div className="flex gap-3 justify-end">
-            <Button type="button" variant="outline" onClick={onClose}>Anuluj</Button>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Anuluj
+            </Button>
             <Button type="submit" disabled={loading}>
               <Tent className="h-4 w-4 mr-1" />
               {loading ? "Tworzenie..." : "Utwórz"}
@@ -481,11 +631,19 @@ function CreateCampDialog({
 // ==================== Dialog szczegółów ====================
 
 function CampDetailDialog({
-  campId, onClose, isAdminOrCoach, onUpdated,
+  campId,
+  onClose,
+  isAdminOrCoach,
+  onUpdated,
 }: {
-  campId: string; onClose: () => void; isAdminOrCoach: boolean; onUpdated: () => void;
+  campId: string;
+  onClose: () => void;
+  isAdminOrCoach: boolean;
+  onUpdated: () => void;
 }) {
-  const [camp, setCamp] = useState<(Camp & { registrations: Registration[] }) | null>(null);
+  const [camp, setCamp] = useState<
+    (Camp & { registrations: Registration[] }) | null
+  >(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [addingPlayers, setAddingPlayers] = useState(false);
@@ -497,7 +655,10 @@ function CampDetailDialog({
 
   useEffect(() => {
     fetchCamp();
-    fetch("/api/players").then((r) => r.json()).then(setPlayers).catch(() => {});
+    fetch("/api/players")
+      .then((r) => r.json())
+      .then(setPlayers)
+      .catch(() => {});
   }, [fetchCamp]);
 
   async function addRegistrations() {
@@ -516,7 +677,10 @@ function CampDetailDialog({
     }
   }
 
-  async function updateRegistration(regId: string, data: Record<string, unknown>) {
+  async function updateRegistration(
+    regId: string,
+    data: Record<string, unknown>
+  ) {
     await fetch(`/api/camps/${campId}/registrations`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -526,7 +690,10 @@ function CampDetailDialog({
   }
 
   async function removeRegistration(regId: string) {
-    await fetch(`/api/camps/${campId}/registrations?registrationId=${regId}`, { method: "DELETE" });
+    await fetch(
+      `/api/camps/${campId}/registrations?registrationId=${regId}`,
+      { method: "DELETE" }
+    );
     fetchCamp();
     onUpdated();
   }
@@ -534,47 +701,243 @@ function CampDetailDialog({
   if (!camp) {
     return (
       <Dialog open onOpenChange={onClose}>
-        <DialogContent><p className="text-center py-8 text-muted-foreground">Ładowanie...</p></DialogContent>
+        <DialogContent>
+          <p className="text-center py-8 text-muted-foreground">
+            Ładowanie...
+          </p>
+        </DialogContent>
       </Dialog>
     );
   }
 
   const registeredIds = camp.registrations.map((r) => r.player.id);
   const availablePlayers = players.filter(
-    (p) => !registeredIds.includes(p.id) && (!camp.category || p.category === camp.category)
+    (p) =>
+      !registeredIds.includes(p.id) &&
+      (!camp.category || p.category === camp.category)
   );
 
-  const confirmed = camp.registrations.filter((r) => r.status === "CONFIRMED").length;
-  const totalPaid = camp.registrations.reduce((sum, r) => sum + r.paidAmount, 0);
+  const confirmed = camp.registrations.filter(
+    (r) => r.status === "CONFIRMED"
+  ).length;
+  const totalPaid = camp.registrations.reduce(
+    (sum, r) => sum + r.paidAmount,
+    0
+  );
+
+  // Kalkulacja dla obozu COS OPO Giżycko
+  const isCOSCamp =
+    camp.name.toLowerCase().includes("cos") ||
+    camp.name.toLowerCase().includes("opo") ||
+    camp.location.toLowerCase().includes("giżycko");
+
+  const participants = camp.maxSpots ?? 30;
+  const kadra = 3;
+  const totalPersons = participants + kadra;
+  const dni = Math.ceil(
+    (new Date(camp.endDate).getTime() - new Date(camp.startDate).getTime()) /
+      (1000 * 60 * 60 * 24)
+  );
+  const lodTotal = 2 * 800 * dni;
+  const transport = 4000;
+  const domkiNoclegi = totalPersons * 208 * dni;
+  const hotelNoclegi = totalPersons * 245 * dni;
+  const domkiTotal = domkiNoclegi + lodTotal + transport;
+  const hotelTotal = hotelNoclegi + lodTotal + transport;
+  const dotacja = Math.min(participants * 250 * dni, participants * 2500);
+  const domkiPerChild = Math.round(domkiTotal / participants);
+  const hotelPerChild = Math.round(hotelTotal / participants);
+  const domkiWithGrant = Math.max(0, Math.round((domkiTotal - dotacja) / participants));
+  const hotelWithGrant = Math.max(0, Math.round((hotelTotal - dotacja) / participants));
+
+  const fmt = (n: number) => n.toLocaleString("pl-PL") + " zł";
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Tent className="h-5 w-5" />
             {camp.name}
-            {camp.category && <Badge variant="outline">{camp.category}</Badge>}
+            {camp.category && (
+              <Badge variant="outline">{camp.category}</Badge>
+            )}
           </DialogTitle>
         </DialogHeader>
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2 flex-wrap">
-          <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {camp.location}</span>
+          <span className="flex items-center gap-1">
+            <MapPin className="h-3.5 w-3.5" /> {camp.location}
+          </span>
           <span className="flex items-center gap-1">
             <Calendar className="h-3.5 w-3.5" />
-            {new Date(camp.startDate).toLocaleDateString("pl-PL")} – {new Date(camp.endDate).toLocaleDateString("pl-PL")}
+            {new Date(camp.startDate).toLocaleDateString("pl-PL")} –{" "}
+            {new Date(camp.endDate).toLocaleDateString("pl-PL")}
           </span>
-          {camp.cost > 0 && <span className="font-medium">{camp.cost} PLN</span>}
+          <span className="flex items-center gap-1">
+            <Clock className="h-3.5 w-3.5" /> {dni} dób
+          </span>
+          {camp.cost > 0 && (
+            <span className="font-medium">{camp.cost} PLN</span>
+          )}
         </div>
 
         {camp.description && (
-          <p className="text-sm text-muted-foreground mb-3">{camp.description}</p>
+          <p className="text-sm text-muted-foreground mb-3">
+            {camp.description}
+          </p>
         )}
 
-        {/* Podsumowanie */}
+        {/* ===== KALKULACJA KOSZTÓW ===== */}
+        {isCOSCamp && (
+          <div className="border rounded-lg overflow-hidden mb-4">
+            {/* Nagłówek kalkulacji */}
+            <div className="bg-sky-50 dark:bg-sky-950 px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
+              <span className="text-sm font-medium text-sky-800 dark:text-sky-200 flex items-center gap-1.5">
+                <TrendingDown className="h-4 w-4" />
+                Kalkulacja kosztów — COS OPO (stawka COPO)
+              </span>
+              <span className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 px-2.5 py-1 rounded-full font-medium">
+                Wniosek o dotację złożony 25.04.2026
+              </span>
+            </div>
+
+            {/* Dwa warianty */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x">
+              {/* Wariant A */}
+              <div className="p-4">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                  Wariant A — Domki (208 zł/dobę)
+                </p>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Noclegi + wyż. ({totalPersons} os. × {dni} dób)</span>
+                    <span>{fmt(domkiNoclegi)}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Lód (2h × 800 zł × {dni} dni)</span>
+                    <span>{fmt(lodTotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Transport</span>
+                    <span>{fmt(transport)}</span>
+                  </div>
+                  <div className="flex justify-between font-semibold text-foreground border-t pt-1.5 mt-1">
+                    <span>Razem</span>
+                    <span>{fmt(domkiTotal)}</span>
+                  </div>
+                </div>
+                <div className="mt-3 pt-3 border-t space-y-1.5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-green-700 dark:text-green-400 font-medium">
+                      Z dotacją ({fmt(dotacja)})
+                    </span>
+                    <span className="text-sm font-bold text-green-700 dark:text-green-400">
+                      {fmt(domkiWithGrant)}/dziecko
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground">
+                      Bez dotacji
+                    </span>
+                    <span className="text-sm font-semibold">
+                      {fmt(domkiPerChild)}/dziecko
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Wariant B */}
+              <div className="p-4">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                  Wariant B — Hotel Olimp (245 zł/dobę)
+                </p>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Noclegi + wyż. ({totalPersons} os. × {dni} dób)</span>
+                    <span>{fmt(hotelNoclegi)}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Lód (2h × 800 zł × {dni} dni)</span>
+                    <span>{fmt(lodTotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Transport</span>
+                    <span>{fmt(transport)}</span>
+                  </div>
+                  <div className="flex justify-between font-semibold text-foreground border-t pt-1.5 mt-1">
+                    <span>Razem</span>
+                    <span>{fmt(hotelTotal)}</span>
+                  </div>
+                </div>
+                <div className="mt-3 pt-3 border-t space-y-1.5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-green-700 dark:text-green-400 font-medium">
+                      Z dotacją ({fmt(dotacja)})
+                    </span>
+                    <span className="text-sm font-bold text-green-700 dark:text-green-400">
+                      {fmt(hotelWithGrant)}/dziecko
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground">
+                      Bez dotacji
+                    </span>
+                    <span className="text-sm font-semibold">
+                      {fmt(hotelPerChild)}/dziecko
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Stopka kalkulacji */}
+            <div className="bg-muted/40 px-4 py-2 border-t text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
+              <span>
+                <span className="font-medium">Przedpłata 60%</span> do COS:{" "}
+                <span className="font-medium text-foreground">do 27.06.2026</span>
+              </span>
+              <span>
+                Dotacja COPO: maks. 250 zł/os./dzień ×{" "}
+                {participants} ucz. × {dni} dni
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* ===== KLUBY PARTNERSKIE ===== */}
+        {isCOSCamp && (
+          <div className="border rounded-lg p-3 mb-4">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Info className="h-3.5 w-3.5 text-muted-foreground" />
+              <p className="text-xs font-medium">
+                Wolne miejsca — kluby partnerskie Liga HLH
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {PARTNER_CLUBS.map((club) => (
+                <span
+                  key={club}
+                  className="text-xs bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300 px-2.5 py-1 rounded-full border border-purple-200 dark:border-purple-800"
+                >
+                  {club}
+                </span>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              W przypadku niezebrania kompletu uczestników SWH, wolne miejsca
+              zostaną zaproponowane klubom Ligi HLH.
+            </p>
+          </div>
+        )}
+
+        {/* ===== PODSUMOWANIE ===== */}
         <div className="grid grid-cols-3 gap-3 mb-4">
           <div className="border rounded-lg p-3 text-center">
-            <p className="text-lg font-bold">{camp.registrations.length}{camp.maxSpots ? `/${camp.maxSpots}` : ""}</p>
+            <p className="text-lg font-bold">
+              {camp.registrations.length}
+              {camp.maxSpots ? `/${camp.maxSpots}` : ""}
+            </p>
             <p className="text-xs text-muted-foreground">Zapisanych</p>
           </div>
           <div className="border rounded-lg p-3 text-center">
@@ -587,25 +950,36 @@ function CampDetailDialog({
           </div>
         </div>
 
-        {/* Lista zapisanych */}
+        {/* ===== UCZESTNICY ===== */}
         <h3 className="font-medium text-sm mb-2">Uczestnicy</h3>
         {camp.registrations.length === 0 ? (
-          <p className="text-center text-muted-foreground py-4 text-sm">Brak zapisanych</p>
+          <p className="text-center text-muted-foreground py-4 text-sm">
+            Brak zapisanych
+          </p>
         ) : (
           <div className="space-y-2 mb-4">
             {camp.registrations.map((reg) => {
               const st = REG_STATUS[reg.status] || REG_STATUS.REGISTERED;
               return (
-                <div key={reg.id} className="flex items-center gap-3 p-2.5 border rounded-lg">
+                <div
+                  key={reg.id}
+                  className="flex items-center gap-3 p-2.5 border rounded-lg"
+                >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">
-                      {reg.player.jerseyNum && <span className="text-muted-foreground mr-1">#{reg.player.jerseyNum}</span>}
+                      {reg.player.jerseyNum && (
+                        <span className="text-muted-foreground mr-1">
+                          #{reg.player.jerseyNum}
+                        </span>
+                      )}
                       {reg.player.firstName} {reg.player.lastName}
                     </p>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span className={st.color}>{st.label}</span>
                       {camp.cost > 0 && (
-                        <span>Wpłata: {reg.paidAmount}/{camp.cost} PLN</span>
+                        <span>
+                          Wpłata: {reg.paidAmount}/{camp.cost} PLN
+                        </span>
                       )}
                     </div>
                   </div>
@@ -613,14 +987,18 @@ function CampDetailDialog({
                     <div className="flex items-center gap-1 shrink-0">
                       <Select
                         value={reg.status}
-                        onValueChange={(v) => v && updateRegistration(reg.id, { status: v })}
+                        onValueChange={(v) =>
+                          v && updateRegistration(reg.id, { status: v })
+                        }
                       >
                         <SelectTrigger className="h-7 text-xs w-[120px]">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           {Object.entries(REG_STATUS).map(([k, v]) => (
-                            <SelectItem key={k} value={k}>{v.label}</SelectItem>
+                            <SelectItem key={k} value={k}>
+                              {v.label}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -639,7 +1017,11 @@ function CampDetailDialog({
                           }}
                         />
                       )}
-                      <Button variant="ghost" size="sm" onClick={() => removeRegistration(reg.id)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeRegistration(reg.id)}
+                      >
                         <X className="h-3.5 w-3.5 text-destructive" />
                       </Button>
                     </div>
@@ -652,7 +1034,11 @@ function CampDetailDialog({
 
         {/* Dodawanie uczestników */}
         {isAdminOrCoach && !addingPlayers && (
-          <Button size="sm" variant="outline" onClick={() => setAddingPlayers(true)}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setAddingPlayers(true)}
+          >
             <Plus className="h-3.5 w-3.5 mr-1" /> Dodaj uczestników
           </Button>
         )}
@@ -661,33 +1047,57 @@ function CampDetailDialog({
           <div className="border-t pt-4 space-y-3">
             <p className="text-sm font-medium">Zapisz zawodników</p>
             {availablePlayers.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Brak dostępnych zawodników</p>
+              <p className="text-sm text-muted-foreground">
+                Brak dostępnych zawodników
+              </p>
             ) : (
               <div className="max-h-48 overflow-y-auto space-y-1 border rounded-lg p-1">
                 {availablePlayers.map((p) => (
-                  <label key={p.id} className="flex items-center gap-2 px-3 py-1.5 hover:bg-accent rounded-md cursor-pointer text-sm">
+                  <label
+                    key={p.id}
+                    className="flex items-center gap-2 px-3 py-1.5 hover:bg-accent rounded-md cursor-pointer text-sm"
+                  >
                     <input
                       type="checkbox"
                       checked={selectedPlayers.includes(p.id)}
                       onChange={(e) =>
                         setSelectedPlayers((prev) =>
-                          e.target.checked ? [...prev, p.id] : prev.filter((x) => x !== p.id)
+                          e.target.checked
+                            ? [...prev, p.id]
+                            : prev.filter((x) => x !== p.id)
                         )
                       }
                       className="h-4 w-4"
                     />
-                    {p.jerseyNum && <span className="text-muted-foreground">#{p.jerseyNum}</span>}
+                    {p.jerseyNum && (
+                      <span className="text-muted-foreground">
+                        #{p.jerseyNum}
+                      </span>
+                    )}
                     {p.firstName} {p.lastName}
-                    <Badge variant="outline" className="ml-auto text-xs">{p.category}</Badge>
+                    <Badge variant="outline" className="ml-auto text-xs">
+                      {p.category}
+                    </Badge>
                   </label>
                 ))}
               </div>
             )}
             <div className="flex gap-2 justify-end">
-              <Button size="sm" variant="outline" onClick={() => { setAddingPlayers(false); setSelectedPlayers([]); }}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setAddingPlayers(false);
+                  setSelectedPlayers([]);
+                }}
+              >
                 Anuluj
               </Button>
-              <Button size="sm" onClick={addRegistrations} disabled={selectedPlayers.length === 0}>
+              <Button
+                size="sm"
+                onClick={addRegistrations}
+                disabled={selectedPlayers.length === 0}
+              >
                 Zapisz ({selectedPlayers.length})
               </Button>
             </div>

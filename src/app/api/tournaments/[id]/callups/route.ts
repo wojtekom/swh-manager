@@ -1,15 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionOrError, requireRole } from "@/lib/auth-helpers";
+import { triggerCallupCreated } from "@/lib/notifications/triggers-callup";
 import { z } from "zod";
 
-const callupSchema = z.object({
-  playerIds: z.array(z.string()).min(1, "Wybierz min. 1 zawodnika"),
-});
+// Schemat: trener powołuje konkretnych zawodników LUB całą grupę
+const callupSchema = z
+  .object({
+    playerIds: z.array(z.string()).optional(),
+    groupId: z.string().optional(),
+    notifyImmediately: z.boolean().default(true),
+  })
+  .refine((d) => (d.playerIds && d.playerIds.length > 0) || d.groupId, {
+    message: "Wybierz min. 1 zawodnika lub grupę",
+  });
 
 const updateSchema = z.object({
   callupId: z.string(),
-  status: z.enum(["CALLED", "CONFIRMED", "DECLINED", "INJURED"]),
+  status: z.enum(["CALLED", "CONFIRMED", "DECLINED", "INJURED"]).optional(),
+  transportChoice: z
+    .enum(["UNDECIDED", "BUS", "OWN", "NONE"])
+    .optional(),
   notes: z.string().optional(),
 });
 
@@ -33,16 +44,31 @@ export async function GET(
           position: true,
           jerseyNum: true,
           category: true,
+          parents: {
+            select: {
+              parent: { select: { name: true, email: true } },
+            },
+          },
         },
       },
     },
-    orderBy: { createdAt: "asc" },
+    orderBy: [{ player: { lastName: "asc" } }, { createdAt: "asc" }],
   });
 
-  return NextResponse.json(callups);
+  const stats = {
+    total: callups.length,
+    called: callups.filter((c: { status: string }) => c.status === "CALLED").length,
+    confirmed: callups.filter((c: { status: string }) => c.status === "CONFIRMED").length,
+    declined: callups.filter((c: { status: string }) => c.status === "DECLINED").length,
+    injured: callups.filter((c: { status: string }) => c.status === "INJURED").length,
+    busCount: callups.filter((c: { transportChoice: string }) => c.transportChoice === "BUS").length,
+    ownCount: callups.filter((c: { transportChoice: string }) => c.transportChoice === "OWN").length,
+  };
+
+  return NextResponse.json({ callups, stats });
 }
 
-// POST /api/tournaments/[id]/callups — powołaj zawodników
+// POST /api/tournaments/[id]/callups — powołaj zawodników (bulk lub cała grupa)
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -59,25 +85,62 @@ export async function POST(
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  // Utwórz powołania (ignoruj duplikaty)
-  const results = await Promise.allSettled(
-    parsed.data.playerIds.map((playerId) =>
-      prisma.callup.create({
-        data: { tournamentId: id, playerId },
-      })
-    )
-  );
+  let playerIds = parsed.data.playerIds || [];
+  if (parsed.data.groupId) {
+    const members = await prisma.groupMember.findMany({
+      where: { groupId: parsed.data.groupId },
+      select: { playerId: true },
+    });
+    const groupPlayerIds = members.map((m: { playerId: string }) => m.playerId);
+    playerIds = Array.from(new Set([...playerIds, ...groupPlayerIds]));
+  }
 
-  const created = results.filter((r) => r.status === "fulfilled").length;
-  return NextResponse.json({ created }, { status: 201 });
+  if (playerIds.length === 0) {
+    return NextResponse.json(
+      { error: "Lista zawodników pusta" },
+      { status: 400 }
+    );
+  }
+
+  const tournament = await prisma.tournament.findUnique({
+    where: { id },
+    select: { id: true, status: true },
+  });
+  if (!tournament) {
+    return NextResponse.json({ error: "Turniej nie istnieje" }, { status: 404 });
+  }
+
+  const created: string[] = [];
+  for (const playerId of playerIds) {
+    try {
+      const callup = await prisma.callup.create({
+        data: { tournamentId: id, playerId },
+      });
+      created.push(callup.id);
+    } catch {
+      // duplikat
+    }
+  }
+
+  if (parsed.data.notifyImmediately && created.length > 0) {
+    Promise.all(created.map((cid) => triggerCallupCreated(cid))).catch((e) =>
+      console.error("[CALLUPS] Notify error:", e)
+    );
+  }
+
+  return NextResponse.json(
+    { created: created.length, skipped: playerIds.length - created.length },
+    { status: 201 }
+  );
 }
 
-// PUT /api/tournaments/[id]/callups — aktualizacja statusu powołania
+// PUT /api/tournaments/[id]/callups — aktualizacja statusu/transportu
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { session, error } = await getSessionOrError();
+  void params;
+  const { error } = await getSessionOrError();
   if (error) return error;
 
   const body = await req.json();
@@ -86,13 +149,17 @@ export async function PUT(
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
+  const updateData: Record<string, unknown> = {
+    respondedAt: new Date(),
+  };
+  if (parsed.data.status) updateData.status = parsed.data.status;
+  if (parsed.data.transportChoice)
+    updateData.transportChoice = parsed.data.transportChoice;
+  if (parsed.data.notes !== undefined) updateData.notes = parsed.data.notes;
+
   const callup = await prisma.callup.update({
     where: { id: parsed.data.callupId },
-    data: {
-      status: parsed.data.status,
-      notes: parsed.data.notes,
-      respondedAt: new Date(),
-    },
+    data: updateData,
   });
 
   return NextResponse.json(callup);

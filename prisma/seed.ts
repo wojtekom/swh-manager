@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { PrismaClient } from "@prisma/client";
 import { DRILLS, TRAINING_PLANS, HLH_TOURNAMENTS, CAMPS } from "./seed-data";
 

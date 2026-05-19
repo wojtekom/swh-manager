@@ -43,7 +43,7 @@ export async function GET() {
 }
 
 const createSchema = z.object({
-  name: z.string().optional(),
+  name: z.string().nullish(),
   isGroup: z.boolean().default(false),
   groupId: z.string().nullable().optional(),
   participantIds: z.array(z.string()).min(1, "Min. 1 uczestnik"),

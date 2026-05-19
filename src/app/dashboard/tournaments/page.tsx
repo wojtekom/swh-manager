@@ -15,7 +15,6 @@ import {
   Swords,
   UserCheck,
   UserX,
-  HelpCircle,
   AlertTriangle,
   X,
 } from "lucide-react";
@@ -24,7 +23,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -39,6 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { getCategoryLabel, ALL_CATEGORIES } from "@/lib/category-labels";
 
 interface Tournament {
   id: string;
@@ -50,7 +49,12 @@ interface Tournament {
   description: string | null;
   status: string;
   group: { id: string; name: string } | null;
+  groupId: string | null;
   createdBy: { id: string; name: string };
+  transportFee: number | null;
+  meetingTime: string | null;
+  meetingLocation: string | null;
+  parentDeadline: string | null;
   _count: { matches: number; callups: number };
 }
 
@@ -67,6 +71,7 @@ interface TournamentMatch {
 interface Callup {
   id: string;
   status: string;
+  transportChoice: string;
   notes: string | null;
   respondedAt: string | null;
   player: {
@@ -108,7 +113,14 @@ const CALLUP_STATUS: Record<string, { label: string; icon: typeof UserCheck; col
   INJURED: { label: "Kontuzja", icon: AlertTriangle, color: "text-orange-600" },
 };
 
-const CATEGORIES = ["U8", "U10", "U12", "U14", "U16", "U18", "SENIOR"];
+const TRANSPORT_LABELS: Record<string, { label: string; emoji: string; color: string }> = {
+  UNDECIDED: { label: "Oczekuje", emoji: "❓", color: "bg-slate-100 text-slate-600" },
+  BUS: { label: "Autokar", emoji: "🚌", color: "bg-blue-100 text-blue-700" },
+  OWN: { label: "Własny", emoji: "🚗", color: "bg-amber-100 text-amber-700" },
+  NONE: { label: "Nie jedzie", emoji: "✖", color: "bg-red-100 text-red-700" },
+};
+
+// CATEGORIES — używamy ALL_CATEGORIES z @/lib/category-labels
 
 export default function TournamentsPage() {
   const { data: session, status: authStatus } = useSession();
@@ -168,11 +180,16 @@ export default function TournamentsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 -mx-4 sm:-mx-6 -my-4 sm:-my-6 px-4 sm:px-6 py-4 sm:py-6 bg-ice min-h-screen">
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Turnieje</h1>
-          <p className="text-muted-foreground">{tournaments.length} turniejów</p>
+        <div className="flex items-center gap-3">
+          <div className="icon-section icon-section-trophy">
+            <Trophy className="h-4 w-4" />
+          </div>
+          <div>
+            <h1 className="font-display text-3xl sm:text-4xl font-bold text-slate-900 leading-tight">Turnieje</h1>
+            <p className="text-sm text-slate-600">{tournaments.length} turniejów</p>
+          </div>
         </div>
         <div className="flex gap-2 flex-wrap">
           <Select value={filterCategory} onValueChange={(v) => v && setFilterCategory(v)}>
@@ -181,8 +198,8 @@ export default function TournamentsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">Wszystkie</SelectItem>
-              {CATEGORIES.map((c) => (
-                <SelectItem key={c} value={c}>{c}</SelectItem>
+              {ALL_CATEGORIES.map((c) => (
+                <SelectItem key={c} value={c}>{getCategoryLabel(c, true)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -206,73 +223,72 @@ export default function TournamentsPage() {
       </div>
 
       {loading ? (
-        <p className="text-center text-muted-foreground py-8">Ładowanie...</p>
+        <p className="text-center text-slate-500 py-8">Ładowanie...</p>
       ) : filtered.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Trophy className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">Brak turniejów.</p>
-          </CardContent>
-        </Card>
+        <div className="card-rink rounded-2xl py-12 text-center">
+          <Trophy className="h-12 w-12 text-sky-300 mx-auto mb-4" />
+          <p className="text-slate-600">Brak turniejów.</p>
+        </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {filtered.map((t) => {
             const statusInfo = STATUS_MAP[t.status] || STATUS_MAP.PLANNED;
             return (
-              <Card key={t.id} className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <Badge variant="outline">{t.category}</Badge>
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusInfo.color}`}>
-                          {statusInfo.label}
-                        </span>
-                      </div>
-                      <CardTitle className="text-lg">{t.name}</CardTitle>
+              <div key={t.id} className="card-rink rounded-2xl p-5">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      <span className="text-xs font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200">
+                        {getCategoryLabel(t.category)}
+                      </span>
+                      <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${statusInfo.color}`}>
+                        {statusInfo.label}
+                      </span>
                     </div>
-                    {isAdminOrCoach && (
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(t.id)}>
-                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                      </Button>
-                    )}
+                    <h3 className="font-display text-lg font-bold text-slate-900 leading-tight">{t.name}</h3>
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-3.5 w-3.5" /> {t.location}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3.5 w-3.5" />
-                      {new Date(t.startDate).toLocaleDateString("pl-PL", { day: "numeric", month: "short" })}
-                      {t.endDate && ` – ${new Date(t.endDate).toLocaleDateString("pl-PL", { day: "numeric", month: "short" })}`}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-4 text-sm">
-                    <span className="flex items-center gap-1">
-                      <Swords className="h-3.5 w-3.5 text-muted-foreground" />
-                      {t._count.matches} {t._count.matches === 1 ? "mecz" : "meczy"}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                      {t._count.callups} powołanych
-                    </span>
-                  </div>
-
                   {isAdminOrCoach && (
-                    <div className="flex items-center gap-2 pt-1">
-                      <Select
-                        value={t.status}
-                        onValueChange={(v) => v && handleStatusChange(t.id, v)}
-                      >
-                        <SelectTrigger className="h-8 text-xs w-[140px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(STATUS_MAP).map(([k, v]) => (
-                            <SelectItem key={k} value={k}>{v.label}</SelectItem>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(t.id)}>
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    </Button>
+                  )}
+                </div>
+                <div className="space-y-1.5 text-sm text-slate-700 mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">📍</span>
+                    <span>{t.location}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">📅</span>
+                    <span>
+                      {new Date(t.startDate).toLocaleDateString("pl-PL", { day: "numeric", month: "long" })}
+                      {t.endDate && ` – ${new Date(t.endDate).toLocaleDateString("pl-PL", { day: "numeric", month: "long" })}`}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm pt-1">
+                    <span className="flex items-center gap-1.5">
+                      <Swords className="h-3.5 w-3.5 text-slate-500" />
+                      <strong>{t._count.matches}</strong> {t._count.matches === 1 ? "mecz" : "meczy"}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <Users className="h-3.5 w-3.5 text-slate-500" />
+                      <strong>{t._count.callups}</strong> powołanych
+                    </span>
+                  </div>
+                </div>
+
+                {isAdminOrCoach && (
+                  <div className="flex items-center gap-2 pt-1">
+                    <Select
+                      value={t.status}
+                      onValueChange={(v) => v && handleStatusChange(t.id, v)}
+                    >
+                      <SelectTrigger className="h-8 text-xs w-[140px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(STATUS_MAP).map(([k, v]) => (
+                          <SelectItem key={k} value={k}>{v.label}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -296,8 +312,7 @@ export default function TournamentsPage() {
                       Szczegóły <ChevronRight className="h-3.5 w-3.5 ml-1" />
                     </Button>
                   )}
-                </CardContent>
-              </Card>
+              </div>
             );
           })}
         </div>
@@ -336,6 +351,7 @@ function CreateTournamentDialog({
   });
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (open) setForm({ name: "", location: "", startDate: "", endDate: "", category: "U12", description: "", groupId: "" });
   }, [open]);
 
@@ -392,8 +408,8 @@ function CreateTournamentDialog({
               <Select value={form.category} onValueChange={(v) => v && setForm({ ...form, category: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {CATEGORIES.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  {ALL_CATEGORIES.map((c) => (
+                    <SelectItem key={c} value={c}>{getCategoryLabel(c, true)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -441,6 +457,7 @@ function TournamentDetailDialog({
   const [matchForm, setMatchForm] = useState({ opponent: "", isHome: true, matchDate: "", notes: "" });
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
   const [addingCallups, setAddingCallups] = useState(false);
+  const [playerSearch, setPlayerSearch] = useState("");
 
   const fetchTournament = useCallback(async () => {
     const res = await fetch(`/api/tournaments/${tournamentId}`);
@@ -448,6 +465,7 @@ function TournamentDetailDialog({
   }, [tournamentId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTournament();
     fetch("/api/players").then((r) => r.json()).then(setPlayers).catch(() => {});
   }, [fetchTournament]);
@@ -485,11 +503,46 @@ function TournamentDetailDialog({
       body: JSON.stringify({ playerIds: selectedPlayers }),
     });
     if (res.ok) {
-      toast.success("Powołania dodane");
+      const data = await res.json();
+      toast.success(`Powołano ${data.created} zawodników${data.skipped ? ` (pominięto ${data.skipped} już powołanych)` : ""}. Powiadomienia rozesłane.`);
       setSelectedPlayers([]);
       setAddingCallups(false);
       fetchTournament();
       onUpdated();
+    } else {
+      toast.error("Błąd przy dodawaniu powołań");
+    }
+  }
+
+  async function callupWholeGroup() {
+    if (!tournament?.groupId) return;
+    const res = await fetch(`/api/tournaments/${tournamentId}/callups`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ groupId: tournament.groupId }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      toast.success(`Powołano ${data.created} zawodników z grupy. ${data.skipped ? `(pominięto ${data.skipped} już powołanych)` : ""}`);
+      fetchTournament();
+      onUpdated();
+    } else {
+      toast.error("Błąd przy powoływaniu grupy");
+    }
+  }
+
+  async function saveTournamentDetails(updates: Partial<Tournament>) {
+    const res = await fetch(`/api/tournaments/${tournamentId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
+    });
+    if (res.ok) {
+      toast.success("Zapisano");
+      fetchTournament();
+      onUpdated();
+    } else {
+      toast.error("Błąd zapisu");
     }
   }
 
@@ -519,9 +572,24 @@ function TournamentDetailDialog({
   }
 
   const calledPlayerIds = tournament.callups.map((c) => c.player.id);
-  const availablePlayers = players.filter(
-    (p) => !calledPlayerIds.includes(p.id) && p.category === tournament.category
-  );
+  const availablePlayers = players
+    .filter((p) => !calledPlayerIds.includes(p.id))
+    .filter((p) => {
+      if (!playerSearch.trim()) return true;
+      const q = playerSearch.toLowerCase();
+      return (
+        p.firstName.toLowerCase().includes(q) ||
+        p.lastName.toLowerCase().includes(q) ||
+        `${p.firstName} ${p.lastName}`.toLowerCase().includes(q)
+      );
+    })
+    .sort((a, b) => {
+      // Najpierw zawodnicy z kategorii turnieju, potem reszta
+      const aMatch = a.category === tournament.category ? 0 : 1;
+      const bMatch = b.category === tournament.category ? 0 : 1;
+      if (aMatch !== bMatch) return aMatch - bMatch;
+      return a.lastName.localeCompare(b.lastName, "pl");
+    });
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -530,7 +598,7 @@ function TournamentDetailDialog({
           <DialogTitle className="flex items-center gap-2">
             <Trophy className="h-5 w-5" />
             {tournament.name}
-            <Badge variant="outline" className="ml-1">{tournament.category}</Badge>
+            <Badge variant="outline" className="ml-1">{getCategoryLabel(tournament.category)}</Badge>
           </DialogTitle>
         </DialogHeader>
 
@@ -547,6 +615,14 @@ function TournamentDetailDialog({
 
         {tournament.description && (
           <p className="text-sm text-muted-foreground mb-4">{tournament.description}</p>
+        )}
+
+        {/* Detale wyjazdu — edytowalne dla admina/trenera */}
+        {isAdminOrCoach && (
+          <TournamentLogistics
+            tournament={tournament}
+            onSave={saveTournamentDetails}
+          />
         )}
 
         {/* Tabs */}
@@ -675,6 +751,7 @@ function TournamentDetailDialog({
               <div className="space-y-2">
                 {tournament.callups.map((c) => {
                   const st = CALLUP_STATUS[c.status] || CALLUP_STATUS.CALLED;
+                  const tr = TRANSPORT_LABELS[c.transportChoice] || TRANSPORT_LABELS.UNDECIDED;
                   const Icon = st.icon;
                   return (
                     <div key={c.id} className="flex items-center gap-3 p-2.5 border rounded-lg">
@@ -683,8 +760,14 @@ function TournamentDetailDialog({
                           {c.player.jerseyNum && <span className="text-muted-foreground mr-1">#{c.player.jerseyNum}</span>}
                           {c.player.firstName} {c.player.lastName}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground flex items-center gap-2">
                           {c.player.position || "Brak pozycji"}
+                          {c.transportChoice !== "UNDECIDED" && (
+                            <span className={cn("inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium", tr.color)}>
+                              {tr.emoji} {tr.label}
+                            </span>
+                          )}
+                          {c.notes && <span className="italic text-muted-foreground/70">{`„${c.notes}"`}</span>}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -730,44 +813,108 @@ function TournamentDetailDialog({
             )}
 
             {isAdminOrCoach && !addingCallups && (
-              <Button size="sm" variant="outline" onClick={() => setAddingCallups(true)}>
-                <Plus className="h-3.5 w-3.5 mr-1" /> Dodaj powołania
-              </Button>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => setAddingCallups(true)}>
+                  <Plus className="h-3.5 w-3.5 mr-1" /> Dodaj powołania
+                </Button>
+                {tournament.groupId && (
+                  <Button size="sm" variant="outline" onClick={callupWholeGroup}>
+                    <Users className="h-3.5 w-3.5 mr-1" /> Powołaj całą grupę
+                  </Button>
+                )}
+              </div>
             )}
 
             {isAdminOrCoach && addingCallups && (
               <div className="border-t pt-4 space-y-3">
-                <p className="text-sm font-medium">Powołaj zawodników ({tournament.category})</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium">
+                    Powołaj zawodników
+                    <span className="text-xs text-muted-foreground ml-2 font-normal">
+                      (turniej: {getCategoryLabel(tournament.category)})
+                    </span>
+                  </p>
+                  {selectedPlayers.length > 0 && (
+                    <span className="text-xs font-semibold text-sky-700">
+                      Zaznaczonych: {selectedPlayers.length}
+                    </span>
+                  )}
+                </div>
+                <Input
+                  placeholder="🔍 Szukaj zawodnika po imieniu lub nazwisku..."
+                  value={playerSearch}
+                  onChange={(e) => setPlayerSearch(e.target.value)}
+                  className="h-9 text-sm"
+                />
                 {availablePlayers.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Brak dostępnych zawodników w tej kategorii</p>
+                  <p className="text-sm text-muted-foreground">
+                    {playerSearch.trim()
+                      ? "Brak zawodników pasujących do wyszukiwania"
+                      : "Wszyscy zawodnicy są już powołani"}
+                  </p>
                 ) : (
-                  <div className="max-h-48 overflow-y-auto space-y-1 border rounded-lg p-1">
-                    {availablePlayers.map((p) => (
-                      <label key={p.id} className="flex items-center gap-2 px-3 py-1.5 hover:bg-accent rounded-md cursor-pointer text-sm">
-                        <input
-                          type="checkbox"
-                          checked={selectedPlayers.includes(p.id)}
-                          onChange={(e) =>
-                            setSelectedPlayers((prev) =>
-                              e.target.checked
-                                ? [...prev, p.id]
-                                : prev.filter((x) => x !== p.id)
-                            )
-                          }
-                          className="h-4 w-4"
-                        />
-                        {p.jerseyNum && <span className="text-muted-foreground">#{p.jerseyNum}</span>}
-                        {p.firstName} {p.lastName}
-                        {p.position && <span className="text-xs text-muted-foreground ml-auto">{p.position}</span>}
-                      </label>
-                    ))}
+                  <div className="max-h-64 overflow-y-auto space-y-1 border rounded-lg p-1">
+                    {availablePlayers.map((p) => {
+                      const isMainCategory = p.category === tournament.category;
+                      return (
+                        <label
+                          key={p.id}
+                          className={cn(
+                            "flex items-center gap-2 px-3 py-1.5 hover:bg-accent rounded-md cursor-pointer text-sm",
+                            !isMainCategory && "opacity-90"
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedPlayers.includes(p.id)}
+                            onChange={(e) =>
+                              setSelectedPlayers((prev) =>
+                                e.target.checked
+                                  ? [...prev, p.id]
+                                  : prev.filter((x) => x !== p.id)
+                              )
+                            }
+                            className="h-4 w-4"
+                          />
+                          {p.jerseyNum && (
+                            <span className="text-muted-foreground">#{p.jerseyNum}</span>
+                          )}
+                          <span className="font-medium">{p.firstName} {p.lastName}</span>
+                          <span
+                            className={cn(
+                              "text-[10px] font-bold px-1.5 py-0.5 rounded ml-auto",
+                              isMainCategory
+                                ? "bg-sky-100 text-sky-700"
+                                : "bg-amber-100 text-amber-800"
+                            )}
+                          >
+                            {getCategoryLabel(p.category)}
+                          </span>
+                          {p.position && (
+                            <span className="text-xs text-muted-foreground">{p.position}</span>
+                          )}
+                        </label>
+                      );
+                    })}
                   </div>
                 )}
                 <div className="flex gap-2 justify-end">
-                  <Button size="sm" variant="outline" onClick={() => { setAddingCallups(false); setSelectedPlayers([]); }}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setAddingCallups(false);
+                      setSelectedPlayers([]);
+                      setPlayerSearch("");
+                    }}
+                  >
                     Anuluj
                   </Button>
-                  <Button size="sm" onClick={addCallups} disabled={selectedPlayers.length === 0}>
+                  <Button
+                    size="sm"
+                    onClick={addCallups}
+                    disabled={selectedPlayers.length === 0}
+                  >
                     Powołaj ({selectedPlayers.length})
                   </Button>
                 </div>
@@ -777,5 +924,100 @@ function TournamentDetailDialog({
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ============ Komponent: Detale logistyczne wyjazdu (opłata, zbiórka, deadline) ============
+function TournamentLogistics({
+  tournament,
+  onSave,
+}: {
+  tournament: Tournament;
+  onSave: (updates: Partial<Tournament>) => Promise<void>;
+}) {
+  const [transportFee, setTransportFee] = useState<string>(
+    tournament.transportFee?.toString() ?? ""
+  );
+  const [meetingTime, setMeetingTime] = useState<string>(
+    tournament.meetingTime ? tournament.meetingTime.slice(0, 16) : ""
+  );
+  const [meetingLocation, setMeetingLocation] = useState<string>(
+    tournament.meetingLocation ?? ""
+  );
+  const [parentDeadline, setParentDeadline] = useState<string>(
+    tournament.parentDeadline ? tournament.parentDeadline.slice(0, 16) : ""
+  );
+  const [saving, setSaving] = useState(false);
+
+  const dirty =
+    transportFee !== (tournament.transportFee?.toString() ?? "") ||
+    meetingTime !== (tournament.meetingTime?.slice(0, 16) ?? "") ||
+    meetingLocation !== (tournament.meetingLocation ?? "") ||
+    parentDeadline !== (tournament.parentDeadline?.slice(0, 16) ?? "");
+
+  async function handleSave() {
+    setSaving(true);
+    await onSave({
+      transportFee: transportFee ? parseFloat(transportFee) : null,
+      meetingTime: meetingTime ? new Date(meetingTime).toISOString() : null,
+      meetingLocation: meetingLocation || null,
+      parentDeadline: parentDeadline ? new Date(parentDeadline).toISOString() : null,
+    } as Partial<Tournament>);
+    setSaving(false);
+  }
+
+  return (
+    <div className="border rounded-lg p-3 mb-4 bg-slate-50/50">
+      <p className="text-xs font-semibold text-muted-foreground mb-2">DETALE WYJAZDU (dla rodziców)</p>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label className="text-xs">Opłata transportowa (zł)</Label>
+          <Input
+            type="number"
+            min="0"
+            step="10"
+            placeholder="np. 150 (puste = brak autokaru)"
+            value={transportFee}
+            onChange={(e) => setTransportFee(e.target.value)}
+            className="h-8 text-sm"
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Deadline odpowiedzi rodziców</Label>
+          <Input
+            type="datetime-local"
+            value={parentDeadline}
+            onChange={(e) => setParentDeadline(e.target.value)}
+            className="h-8 text-sm"
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Godzina zbiórki</Label>
+          <Input
+            type="datetime-local"
+            value={meetingTime}
+            onChange={(e) => setMeetingTime(e.target.value)}
+            className="h-8 text-sm"
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Miejsce zbiórki</Label>
+          <Input
+            type="text"
+            placeholder="np. Parking Nowe Kino"
+            value={meetingLocation}
+            onChange={(e) => setMeetingLocation(e.target.value)}
+            className="h-8 text-sm"
+          />
+        </div>
+      </div>
+      {dirty && (
+        <div className="flex justify-end mt-2">
+          <Button size="sm" onClick={handleSave} disabled={saving}>
+            {saving ? "Zapisywanie..." : "Zapisz detale"}
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }
